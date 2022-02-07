@@ -49,6 +49,7 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.jpa.domain.JpaSort.JpaOrder;
+import org.springframework.data.jpa.provider.PersistenceProvider;
 import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
@@ -584,6 +585,11 @@ public abstract class QueryUtils {
 	 * @return a {@link List} of {@link jakarta.persistence.criteria.Order}s.
 	 */
 	public static List<jakarta.persistence.criteria.Order> toOrders(Sort sort, From<?, ?> from, CriteriaBuilder cb) {
+		return toOrders(sort, from, cb, null);
+	}
+
+	public static List<jakarta.persistence.criteria.Order> toOrders(Sort sort, From<?, ?> from, CriteriaBuilder cb,
+			@Nullable PersistenceProvider provider) {
 
 		if (sort.isUnsorted()) {
 			return Collections.emptyList();
@@ -595,7 +601,14 @@ public abstract class QueryUtils {
 		List<jakarta.persistence.criteria.Order> orders = new ArrayList<>();
 
 		for (org.springframework.data.domain.Sort.Order order : sort) {
-			orders.add(toJpaOrder(order, from, cb));
+
+			jakarta.persistence.criteria.Order jpaOrder = toJpaOrder(order, from, cb);
+
+			if (provider != null) {
+				jpaOrder = provider.applyNullability(order, jpaOrder);
+			}
+
+			orders.add(jpaOrder);
 		}
 
 		return orders;
@@ -720,8 +733,9 @@ public abstract class QueryUtils {
 		String segment = property.getSegment();
 
 		// already inner joined so outer join is useless
-		if (isAlreadyInnerJoined(from, segment))
+		if (isAlreadyInnerJoined(from, segment)) {
 			return false;
+		}
 
 		Bindable<?> propertyPathModel;
 		Bindable<?> model = from.getModel();

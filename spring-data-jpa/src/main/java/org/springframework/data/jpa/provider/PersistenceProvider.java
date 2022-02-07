@@ -18,21 +18,28 @@ package org.springframework.data.jpa.provider;
 import static org.springframework.data.jpa.provider.JpaClassUtils.*;
 import static org.springframework.data.jpa.provider.PersistenceProvider.Constants.*;
 
-import java.util.Collections;
-import java.util.NoSuchElementException;
-import java.util.Set;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.metamodel.IdentifiableType;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.SingularAttribute;
+
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.eclipse.persistence.jpa.JpaQuery;
 import org.eclipse.persistence.queries.ScrollableCursor;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.sqm.NullPrecedence;
+import org.springframework.data.domain.Sort.NullHandling;
+import org.springframework.data.jpa.domain.JpaSort.JpaOrder;
 
 import org.springframework.data.jpa.repository.query.JpaParameters;
 import org.springframework.data.jpa.repository.query.JpaParametersParameterAccessor;
@@ -40,7 +47,9 @@ import org.springframework.data.util.CloseableIterator;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * Enumeration representing persistence providers to be used.
@@ -95,6 +104,38 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		public <T> Set<SingularAttribute<? super T, ?>> getIdClassAttributes(IdentifiableType<T> type) {
 			return type.hasSingleIdAttribute() ? Collections.emptySet() : super.getIdClassAttributes(type);
 		}
+	},
+
+	HIBERNATE_6(//
+			Collections.singletonList(HIBERNATE_ENTITY_MANAGER_INTERFACE), //
+			Collections.singletonList(HIBERNATE_JPA_METAMODEL_TYPE)) {
+
+		@Override
+		public String extractQueryString(Query query) {
+			return HibernateUtils.getHibernateQuery(query);
+		}
+
+		/**
+		 * Return custom placeholder ({@code *}) as Hibernate does create invalid queries for count queries for objects with
+		 * compound keys.
+		 *
+		 * @see <a href="https://hibernate.atlassian.net/browse/HHH-4044">HHH-4044</a>
+		 * @see <a href="https://hibernate.atlassian.net/browse/HHH-3096">HHH-3096</a>
+		 */
+		@Override
+		public String getCountQueryPlaceholder() {
+			return "*";
+		}
+
+		@Override
+		public boolean shouldUseAccessorFor(Object entity) {
+			return entity instanceof HibernateProxy;
+		}
+
+		@Override
+		public Object getIdentifierFrom(Object entity) {
+			return ((HibernateProxy) entity).getHibernateLazyInitializer().getIdentifier();
+		}
 
 		@Override
 		public CloseableIterator<Object> executeQueryWithResultStream(Query jpaQuery) {
@@ -104,6 +145,31 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		@Override
 		public JpaParametersParameterAccessor getParameterAccessor(JpaParameters parameters, Object[] values, EntityManager em) {
 			return new HibernateJpaParametersParameterAccessor(parameters, values, em);
+		}
+
+		@Override
+		public Order applyNullability(org.springframework.data.domain.Sort.Order source, Order target) {
+
+			if (!JpaOrder.class.isInstance(target)) {
+				return target;
+			}
+
+			NullPrecedence precedence = translate(source.getNullHandling());
+
+			return (Order) ReflectionUtils.invokeMethod(NULLABILITY_METHOD, target, precedence);
+		}
+
+		private NullPrecedence translate(NullHandling handling) {
+
+			switch (handling) {
+				case NULLS_FIRST:
+					return NullPrecedence.FIRST;
+				case NULLS_LAST:
+					return NullPrecedence.LAST;
+				case NATIVE:
+				default:
+					return NullPrecedence.NONE;
+			}
 		}
 	},
 
@@ -163,9 +229,36 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		}
 	};
 
+	private static final Collection<PersistenceProvider> ALL;
+
 	static ConcurrentReferenceHashMap<Class<?>, PersistenceProvider> CACHE = new ConcurrentReferenceHashMap<>();
 	private final Iterable<String> entityManagerClassNames;
 	private final Iterable<String> metamodelClassNames;
+	private static final Method NULLABILITY_METHOD;
+
+	static {
+
+		NULLABILITY_METHOD = detectNullabilityMethod();
+
+		PersistenceProvider hibernate = NULLABILITY_METHOD != null ? HIBERNATE_6 : HIBERNATE;
+
+		ALL = Arrays.asList(hibernate, ECLIPSELINK, GENERIC_JPA);
+
+	}
+
+	private static final Method detectNullabilityMethod() {
+
+		if (!ClassUtils.isPresent("org.hibernate.query.criteria.JpaOrder", PersistenceProvider.class.getClassLoader())) {
+			return null;
+		}
+
+		try {
+			return JpaOrder.class.getMethod("nullPrecedence", NullPrecedence.class);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
 	/**
 	 * Creates a new {@link PersistenceProvider}.
 	 *
@@ -209,7 +302,7 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 			return cachedProvider;
 		}
 
-		for (PersistenceProvider provider : values()) {
+		for (PersistenceProvider provider : ALL) {
 			for (String entityManagerClassName : provider.entityManagerClassNames) {
 				if (isEntityManagerOfType(em, entityManagerClassName)) {
 					return cacheAndReturn(entityManagerType, provider);
@@ -281,6 +374,10 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		}
 	}
 
+	public Order applyNullability(org.springframework.data.domain.Sort.Order source, Order target) {
+		return target;
+	}
+
 	/**
 	 * Holds the PersistenceProvider specific interface names.
 	 *
@@ -312,7 +409,7 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 	 */
 	private static class HibernateScrollableResultsIterator implements CloseableIterator<Object> {
 
-		private final @Nullable ScrollableResults scrollableResults;
+		private final @Nullable ScrollableResults<Object[]> scrollableResults;
 
 		/**
 		 * Creates a new {@link HibernateScrollableResultsIterator} for the given {@link Query}.
@@ -321,7 +418,7 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		 */
 		HibernateScrollableResultsIterator(Query jpaQuery) {
 
-			org.hibernate.query.Query<?> query = jpaQuery.unwrap(org.hibernate.query.Query.class);
+			org.hibernate.query.Query<Object[]> query = jpaQuery.unwrap(org.hibernate.query.Query.class);
 			this.scrollableResults = query.setReadOnly(TransactionSynchronizationManager.isCurrentTransactionReadOnly())//
 					.scroll(ScrollMode.FORWARD_ONLY);
 		}
@@ -334,7 +431,7 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 			}
 
 			// Cast needed for Hibernate 6 compatibility
-			Object[] row = (Object[]) scrollableResults.get();
+			Object[] row = scrollableResults.get();
 
 			return row.length == 1 ? row[0] : row;
 		}
