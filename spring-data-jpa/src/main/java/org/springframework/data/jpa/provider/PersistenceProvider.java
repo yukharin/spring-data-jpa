@@ -25,10 +25,9 @@ import jakarta.persistence.metamodel.IdentifiableType;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.SingularAttribute;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -37,19 +36,15 @@ import org.eclipse.persistence.queries.ScrollableCursor;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.query.criteria.JpaOrder;
 import org.hibernate.query.sqm.NullPrecedence;
-import org.springframework.data.domain.Sort.NullHandling;
-import org.springframework.data.jpa.domain.JpaSort.JpaOrder;
-
 import org.springframework.data.jpa.repository.query.JpaParameters;
 import org.springframework.data.jpa.repository.query.JpaParametersParameterAccessor;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Enumeration representing persistence providers to be used.
@@ -104,38 +99,6 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		public <T> Set<SingularAttribute<? super T, ?>> getIdClassAttributes(IdentifiableType<T> type) {
 			return type.hasSingleIdAttribute() ? Collections.emptySet() : super.getIdClassAttributes(type);
 		}
-	},
-
-	HIBERNATE_6(//
-			Collections.singletonList(HIBERNATE_ENTITY_MANAGER_INTERFACE), //
-			Collections.singletonList(HIBERNATE_JPA_METAMODEL_TYPE)) {
-
-		@Override
-		public String extractQueryString(Query query) {
-			return HibernateUtils.getHibernateQuery(query);
-		}
-
-		/**
-		 * Return custom placeholder ({@code *}) as Hibernate does create invalid queries for count queries for objects with
-		 * compound keys.
-		 *
-		 * @see <a href="https://hibernate.atlassian.net/browse/HHH-4044">HHH-4044</a>
-		 * @see <a href="https://hibernate.atlassian.net/browse/HHH-3096">HHH-3096</a>
-		 */
-		@Override
-		public String getCountQueryPlaceholder() {
-			return "*";
-		}
-
-		@Override
-		public boolean shouldUseAccessorFor(Object entity) {
-			return entity instanceof HibernateProxy;
-		}
-
-		@Override
-		public Object getIdentifierFrom(Object entity) {
-			return ((HibernateProxy) entity).getHibernateLazyInitializer().getIdentifier();
-		}
 
 		@Override
 		public CloseableIterator<Object> executeQueryWithResultStream(Query jpaQuery) {
@@ -143,33 +106,23 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		}
 
 		@Override
-		public JpaParametersParameterAccessor getParameterAccessor(JpaParameters parameters, Object[] values, EntityManager em) {
+		public JpaParametersParameterAccessor getParameterAccessor(JpaParameters parameters, Object[] values,
+				EntityManager em) {
 			return new HibernateJpaParametersParameterAccessor(parameters, values, em);
 		}
 
 		@Override
 		public Order applyNullability(org.springframework.data.domain.Sort.Order source, Order target) {
 
-			if (!JpaOrder.class.isInstance(target)) {
+			if (!(target instanceof JpaOrder jpaOrder)) {
 				return target;
 			}
 
-			NullPrecedence precedence = translate(source.getNullHandling());
-
-			return (Order) ReflectionUtils.invokeMethod(NULLABILITY_METHOD, target, precedence);
-		}
-
-		private NullPrecedence translate(NullHandling handling) {
-
-			switch (handling) {
-				case NULLS_FIRST:
-					return NullPrecedence.FIRST;
-				case NULLS_LAST:
-					return NullPrecedence.LAST;
-				case NATIVE:
-				default:
-					return NullPrecedence.NONE;
-			}
+			return switch (source.getNullHandling()) {
+				case NULLS_FIRST -> jpaOrder.nullPrecedence(NullPrecedence.FIRST);
+				case NULLS_LAST -> jpaOrder.nullPrecedence(NullPrecedence.LAST);
+				case NATIVE -> jpaOrder.nullPrecedence(NullPrecedence.NONE);
+			};
 		}
 	},
 
@@ -229,35 +182,11 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		}
 	};
 
-	private static final Collection<PersistenceProvider> ALL;
+	private static final Collection<PersistenceProvider> ALL = List.of(HIBERNATE, ECLIPSELINK, GENERIC_JPA);
 
 	static ConcurrentReferenceHashMap<Class<?>, PersistenceProvider> CACHE = new ConcurrentReferenceHashMap<>();
 	private final Iterable<String> entityManagerClassNames;
 	private final Iterable<String> metamodelClassNames;
-	private static final Method NULLABILITY_METHOD;
-
-	static {
-
-		NULLABILITY_METHOD = detectNullabilityMethod();
-
-		PersistenceProvider hibernate = NULLABILITY_METHOD != null ? HIBERNATE_6 : HIBERNATE;
-
-		ALL = Arrays.asList(hibernate, ECLIPSELINK, GENERIC_JPA);
-
-	}
-
-	private static final Method detectNullabilityMethod() {
-
-		if (!ClassUtils.isPresent("org.hibernate.query.criteria.JpaOrder", PersistenceProvider.class.getClassLoader())) {
-			return null;
-		}
-
-		try {
-			return JpaOrder.class.getMethod("nullPrecedence", NullPrecedence.class);
-		} catch (Exception e) {
-			return null;
-		}
-	}
 
 	/**
 	 * Creates a new {@link PersistenceProvider}.
@@ -342,7 +271,8 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		return cacheAndReturn(metamodelType, GENERIC_JPA);
 	}
 
-	public JpaParametersParameterAccessor getParameterAccessor(JpaParameters parameters, Object[] values, EntityManager em) {
+	public JpaParametersParameterAccessor getParameterAccessor(JpaParameters parameters, Object[] values,
+			EntityManager em) {
 		return new JpaParametersParameterAccessor(parameters, values);
 	}
 
@@ -389,9 +319,9 @@ public enum PersistenceProvider implements QueryExtractor, ProxyIdAccessor {
 		String GENERIC_JPA_ENTITY_MANAGER_INTERFACE = "jakarta.persistence.EntityManager";
 		String ECLIPSELINK_ENTITY_MANAGER_INTERFACE = "org.eclipse.persistence.jpa.JpaEntityManager";
 		// needed as Spring only exposes that interface via the EM proxy
-		String HIBERNATE_ENTITY_MANAGER_INTERFACE = "org.hibernate.jpa.HibernateEntityManager";
+		String HIBERNATE_ENTITY_MANAGER_INTERFACE = "org.hibernate.engine.spi.SessionImplementor";
 
-		String HIBERNATE_JPA_METAMODEL_TYPE = "org.hibernate.metamodel.internal.MetamodelImpl";
+		String HIBERNATE_JPA_METAMODEL_TYPE = "org.hibernate.metamodel.model.domain.JpaMetamodel";
 		String ECLIPSELINK_JPA_METAMODEL_TYPE = "org.eclipse.persistence.internal.jpa.metamodel.MetamodelImpl";
 	}
 
