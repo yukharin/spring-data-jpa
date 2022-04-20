@@ -31,6 +31,7 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceUnit;
 
+import org.springframework.beans.factory.generator.AotContributingBeanPostProcessor;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -40,6 +41,7 @@ import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
+import org.springframework.data.jpa.aot.AotJapRepositoryPostProcessor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.DefaultJpaContext;
 import org.springframework.data.jpa.repository.support.EntityManagerBeanDefinitionRegistrarPostProcessor;
@@ -93,13 +95,18 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 	}
 
 	@Override
-	protected Collection<Class<? extends Annotation>> getIdentifyingAnnotations() {
+	public Collection<Class<? extends Annotation>> getIdentifyingAnnotations() {
 		return Arrays.asList(Entity.class, MappedSuperclass.class);
 	}
 
 	@Override
 	protected Collection<Class<?>> getIdentifyingTypes() {
 		return Collections.<Class<?>> singleton(JpaRepository.class);
+	}
+
+	@Override
+	public Class<? extends AotContributingBeanPostProcessor> getAotPostProcessor() {
+		return AotJapRepositoryPostProcessor.class;
 	}
 
 	@Override
