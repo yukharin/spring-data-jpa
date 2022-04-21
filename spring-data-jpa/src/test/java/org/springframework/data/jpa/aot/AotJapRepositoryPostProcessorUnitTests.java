@@ -18,12 +18,25 @@ package org.springframework.data.jpa.aot;
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.data.jpa.aot.RepositoryBeanContributionAssert.*;
 
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.aot.RepositoryBeanContribution;
+import org.springframework.data.jpa.aot.configs.AuditableEntityJpaConfig;
 import org.springframework.data.jpa.aot.configs.SimpleJpaConfig;
+import org.springframework.data.jpa.domain.sample.AuditableEmbeddable;
+import org.springframework.data.jpa.domain.sample.AuditableEntity;
+import org.springframework.data.jpa.domain.sample.Customer;
+import org.springframework.data.jpa.domain.sample.Order;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * @author Christoph Strobl
@@ -40,10 +53,26 @@ public class AotJapRepositoryPostProcessorUnitTests {
 		assertThatContribution(repositoryBeanContribution) //
 				.codeContributionSatisfies(contribution -> {
 
-					System.out.println("contribution: " + contribution);
-					//contribution.
+					contribution.contributesReflectionFor(Order.class, Customer.class);
+					contribution.contributesReflectionFor(Table.class, Entity.class, Id.class, ManyToOne.class);
 				});
 	}
+
+	@Test
+	void contributesEntityListeners() {
+
+		RepositoryBeanContribution repositoryBeanContribution = computeConfiguration(AuditableEntityJpaConfig.class)
+				.forRepository(AuditableEntityJpaConfig.AuditableEntityRepository.class);
+
+		assertThatContribution(repositoryBeanContribution) //
+				.codeContributionSatisfies(contribution -> {
+
+					contribution.contributesReflectionFor(AuditableEntity.class, AuditableEmbeddable.class);
+					contribution.contributesReflectionFor(Entity.class, Id.class, GeneratedValue.class, Embedded.class, EntityListeners.class);
+					contribution.contributesReflectionFor(AuditingEntityListener.class);
+				});
+	}
+
 
 	BeanContributionBuilder computeConfiguration(Class<?> configuration) {
 
