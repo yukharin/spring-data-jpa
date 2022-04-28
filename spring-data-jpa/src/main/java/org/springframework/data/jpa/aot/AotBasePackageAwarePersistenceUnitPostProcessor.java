@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,9 @@ package org.springframework.data.jpa.aot;
 
 import java.util.Collection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.orm.jpa.persistenceunit.MutablePersistenceUnitInfo;
 import org.springframework.orm.jpa.persistenceunit.PersistenceUnitPostProcessor;
 import org.springframework.util.CollectionUtils;
@@ -27,24 +30,31 @@ import org.springframework.util.CollectionUtils;
  */
 public class AotBasePackageAwarePersistenceUnitPostProcessor implements PersistenceUnitPostProcessor {
 
-	private Collection<String> packageNames;
+	private static final Log LOGGER = LogFactory.getLog(AotBasePackageAwarePersistenceUnitPostProcessor.class);
+
+	@Nullable
+	private Collection<String> packageNames; // just here for the AOT post processor
+
+	@Nullable
 	private Collection<String> managedTypes;
+
+	@Override
+	public void postProcessPersistenceUnitInfo(MutablePersistenceUnitInfo pui) {
+
+		if (!CollectionUtils.isEmpty(managedTypes)) {
+
+			if (LOGGER.isInfoEnabled()) {
+				LOGGER.info(String.format("Adding managed types: %s", managedTypes));
+			}
+			managedTypes.forEach(pui::addManagedClassName);
+		}
+	}
 
 	public void setPackageNames(Collection<String> packageNames) {
 		this.packageNames = packageNames;
 	}
 
 	public void setManagedTypes(Collection<String> managedTypes) {
-		System.out.println("The managed types: " + managedTypes);
 		this.managedTypes = managedTypes;
-	}
-
-	@Override
-	public void postProcessPersistenceUnitInfo(MutablePersistenceUnitInfo pui) {
-		System.out.println("pui: " + pui);
-		if (!CollectionUtils.isEmpty(managedTypes)) {
-			System.out.println("Adding managed Classes: " + managedTypes);
-			managedTypes.forEach(pui::addManagedClassName);
-		}
 	}
 }

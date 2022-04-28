@@ -34,6 +34,7 @@ public class AotJapRepositoryPostProcessor extends AotContributingRepositoryBean
 
 		super.contribute(ctx, contribution);
 
+		// TODO: should be handled by spring-orm
 		AotJpaEntityPostProcessor aotJpaEntityPostProcessor = new AotJpaEntityPostProcessor();
 		aotJpaEntityPostProcessor.setBasePackages(ctx.getBasePackages()); // lookup entities in base packages
 		aotJpaEntityPostProcessor.setManagedTypes(ctx.getResolvedTypes().stream().filter(it -> !isJavaOrPrimitiveType(it)).collect(Collectors.toSet())); // add the entities referenced from the repository

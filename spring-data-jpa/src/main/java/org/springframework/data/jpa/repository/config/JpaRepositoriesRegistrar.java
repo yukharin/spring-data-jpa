@@ -60,6 +60,7 @@ class JpaRepositoriesRegistrar extends RepositoryBeanDefinitionRegistrarSupport 
 	public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry, BeanNameGenerator generator) {
 		super.registerBeanDefinitions(metadata, registry, generator);
 
+		// TODO: move this to a better place where it is only executed
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(AotBasePackageAwarePersistenceUnitPostProcessor.class);
 		RepositoryConfigurationSource configurationSource = new AnnotationRepositoryConfigurationSource(metadata, getAnnotation(), resourceLoader, environment, registry, generator);
 

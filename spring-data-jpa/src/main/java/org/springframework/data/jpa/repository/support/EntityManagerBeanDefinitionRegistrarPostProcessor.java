@@ -40,7 +40,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.Ordered;
 import org.springframework.data.jpa.aot.AotBasePackageAwarePersistenceUnitPostProcessor;
-import org.springframework.orm.jpa.AbstractEntityManagerFactoryBean;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.SharedEntityManagerCreator;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
@@ -101,10 +101,12 @@ public class EntityManagerBeanDefinitionRegistrarPostProcessor implements BeanFa
 	@Override
 	public BeanInstantiationContribution contribute(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 
-		if (!ClassUtils.isAssignable(AbstractEntityManagerFactoryBean.class, beanType) || ObjectUtils.nullSafeEquals(beanDefinition.getBeanClassName(), "org.springframework.orm.jpa.SharedEntityManagerCreator")) {
+		if (!ClassUtils.isAssignable(LocalContainerEntityManagerFactoryBean.class, beanType) || ObjectUtils.nullSafeEquals(beanDefinition.getBeanClassName(), "org.springframework.orm.jpa.SharedEntityManagerCreator")) {
 			return null;
 		}
 
+		// make sure to add the predefined PersistenceUnitPostProcessor that
+		// TODO: read the bean name from the bean factory and skip if not available
 		PropertyValue propertyValue = beanDefinition.getPropertyValues().getPropertyValue("persistenceUnitPostProcessors");
 		if (propertyValue == null || ObjectUtils.isEmpty(propertyValue.getValue())) {
 			beanDefinition.getPropertyValues().addPropertyValue("persistenceUnitPostProcessors", new RuntimeBeanReference(AotBasePackageAwarePersistenceUnitPostProcessor.class));

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.aot.generator.CodeContribution;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.generator.AotContributingBeanPostProcessor;
@@ -38,6 +40,8 @@ import org.springframework.util.ClassUtils;
  * @since 2022/04
  */
 public class AotPersistenceUnitPostProcessor implements AotContributingBeanPostProcessor, ResourceLoaderAware {
+
+	private static final Log LOGGER = LogFactory.getLog(AotPersistenceUnitPostProcessor.class);
 
 	private ResourceLoader resourceLoader;
 
@@ -61,6 +65,10 @@ public class AotPersistenceUnitPostProcessor implements AotContributingBeanPostP
 					}
 				}
 
+				if (LOGGER.isDebugEnabled()) {
+					LOGGER.debug(String.format("Preparing AotBasePackageAwarePersistenceUnitPostProcessor - scanning packages %s for managed types.", packageNames));
+				}
+
 				Set<String> managedTypeNames = lookupRelevantTypes(resourceLoader.getClassLoader(), packageNames).stream().map(Class::getName).collect(Collectors.toSet());
 
 				ClassName set = ClassName.get("java.util", "LinkedHashSet");
@@ -75,7 +83,6 @@ public class AotPersistenceUnitPostProcessor implements AotContributingBeanPostP
 			}
 		};
 	}
-
 
 	Set<Class<?>> lookupRelevantTypes(ClassLoader classLoader, Collection<String> packageNames) {
 

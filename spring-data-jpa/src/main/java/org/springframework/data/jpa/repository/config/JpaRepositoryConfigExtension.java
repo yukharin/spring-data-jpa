@@ -161,17 +161,6 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 
 		Object source = config.getSource();
 
-//		registerIfNotAlreadyRegistered(() -> {
-//
-//			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(AotPersistenceUnitPostProcessor.class);
-//
-//			if(config.getBasePackages() != null) {
-//				builder.addPropertyValue("packageNames", config.getBasePackages().stream().collect(Collectors.toSet()));
-//			}
-//
-//			return builder.getBeanDefinition();
-//		}, registry, AotPersistenceUnitPostProcessor.class.getName(), source);
-
 		registerLazyIfNotAlreadyRegistered(
 				() -> new RootBeanDefinition(EntityManagerBeanDefinitionRegistrarPostProcessor.class), registry,
 				EM_BEAN_DEFINITION_REGISTRAR_POST_PROCESSOR_BEAN_NAME, source);
