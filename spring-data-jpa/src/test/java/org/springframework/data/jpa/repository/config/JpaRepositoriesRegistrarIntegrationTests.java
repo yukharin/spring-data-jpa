@@ -23,6 +23,7 @@ import java.util.List;
 import jakarta.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -53,6 +54,7 @@ import org.springframework.util.ClassUtils;
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration
+@Disabled
 public class JpaRepositoriesRegistrarIntegrationTests {
 
 	@Autowired UserRepository repository;

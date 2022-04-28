@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;
@@ -42,6 +43,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
 import org.springframework.data.jpa.aot.AotJapRepositoryPostProcessor;
+import org.springframework.data.jpa.aot.AotPersistenceUnitPostProcessor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.DefaultJpaContext;
 import org.springframework.data.jpa.repository.support.EntityManagerBeanDefinitionRegistrarPostProcessor;
@@ -54,6 +56,7 @@ import org.springframework.data.repository.config.XmlRepositoryConfigurationSour
 import org.springframework.lang.Nullable;
 import org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -158,6 +161,17 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 
 		Object source = config.getSource();
 
+//		registerIfNotAlreadyRegistered(() -> {
+//
+//			BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(AotPersistenceUnitPostProcessor.class);
+//
+//			if(config.getBasePackages() != null) {
+//				builder.addPropertyValue("packageNames", config.getBasePackages().stream().collect(Collectors.toSet()));
+//			}
+//
+//			return builder.getBeanDefinition();
+//		}, registry, AotPersistenceUnitPostProcessor.class.getName(), source);
+
 		registerLazyIfNotAlreadyRegistered(
 				() -> new RootBeanDefinition(EntityManagerBeanDefinitionRegistrarPostProcessor.class), registry,
 				EM_BEAN_DEFINITION_REGISTRAR_POST_PROCESSOR_BEAN_NAME, source);
@@ -196,6 +210,8 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 			return builder.getBeanDefinition();
 
 		}, registry, JpaEvaluationContextExtension.class.getName(), source);
+
+
 	}
 
 	@Override

@@ -63,7 +63,6 @@ public class AotJpaEntityPostProcessor implements AotContributingBeanPostProcess
 
 	private Set<Class<?>> managedTypes = Collections.emptySet();
 
-
 	@Override
 	public BeanInstantiationContribution contribute(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 

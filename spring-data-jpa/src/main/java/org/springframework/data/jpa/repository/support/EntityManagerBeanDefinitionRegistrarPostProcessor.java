@@ -17,23 +17,33 @@ package org.springframework.data.jpa.repository.support;
 
 import static org.springframework.data.jpa.util.BeanDefinitionUtils.*;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-
 import org.springframework.beans.BeansException;
+import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
+import org.springframework.beans.factory.generator.AotContributingBeanPostProcessor;
+import org.springframework.beans.factory.generator.BeanInstantiationContribution;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.AutowireCandidateQualifier;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.Ordered;
-import org.springframework.data.jpa.util.BeanDefinitionUtils.*;
+import org.springframework.data.jpa.aot.AotBasePackageAwarePersistenceUnitPostProcessor;
+import org.springframework.orm.jpa.AbstractEntityManagerFactoryBean;
 import org.springframework.orm.jpa.SharedEntityManagerCreator;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * {@link BeanFactoryPostProcessor} to register a {@link SharedEntityManagerCreator} for every
@@ -45,7 +55,7 @@ import org.springframework.orm.jpa.SharedEntityManagerCreator;
  * @author Oliver Gierke
  * @author Réda Housni Alaoui
  */
-public class EntityManagerBeanDefinitionRegistrarPostProcessor implements BeanFactoryPostProcessor, Ordered {
+public class EntityManagerBeanDefinitionRegistrarPostProcessor implements BeanFactoryPostProcessor, AotContributingBeanPostProcessor, Ordered {
 
 	@Override
 	public int getOrder() {
@@ -86,5 +96,24 @@ public class EntityManagerBeanDefinitionRegistrarPostProcessor implements BeanFa
 
 			BeanDefinitionReaderUtils.registerWithGeneratedName(emBeanDefinition, definitionRegistry);
 		}
+	}
+
+	@Override
+	public BeanInstantiationContribution contribute(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+
+		if (!ClassUtils.isAssignable(AbstractEntityManagerFactoryBean.class, beanType) || ObjectUtils.nullSafeEquals(beanDefinition.getBeanClassName(), "org.springframework.orm.jpa.SharedEntityManagerCreator")) {
+			return null;
+		}
+
+		PropertyValue propertyValue = beanDefinition.getPropertyValues().getPropertyValue("persistenceUnitPostProcessors");
+		if (propertyValue == null || ObjectUtils.isEmpty(propertyValue.getValue())) {
+			beanDefinition.getPropertyValues().addPropertyValue("persistenceUnitPostProcessors", new RuntimeBeanReference(AotBasePackageAwarePersistenceUnitPostProcessor.class));
+		} else {
+			Collection<Object> puiPostProcessors = new ArrayList<>((Collection<Object>) propertyValue.getValue());
+			puiPostProcessors.add(new RuntimeBeanReference(AotBasePackageAwarePersistenceUnitPostProcessor.class));
+			beanDefinition.getPropertyValues().addPropertyValue(propertyValue.getName(), puiPostProcessors);
+		}
+
+		return null;
 	}
 }
