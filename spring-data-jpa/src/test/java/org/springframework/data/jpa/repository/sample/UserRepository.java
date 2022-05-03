@@ -15,6 +15,9 @@
  */
 package org.springframework.data.jpa.repository.sample;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.QueryHint;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -22,9 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.QueryHint;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -573,8 +573,8 @@ public interface UserRepository
 
 	// DATAJPA-1233
 	@Query(
-			value = "SELECT u FROM User u WHERE ?2 = 'x' ORDER BY CASE WHEN (u.firstname  >= ?1) THEN 0 ELSE 1 END, u.firstname")
-	Page<User> findAllOrderedBySpecialNameMultipleParamsIndexed(String name, String other, Pageable page);
+			value = "SELECT u FROM User u WHERE ?1 = 'x' ORDER BY CASE WHEN (u.firstname  >= ?2) THEN 0 ELSE 1 END, u.firstname")
+	Page<User> findAllOrderedBySpecialNameMultipleParamsIndexed(String other, String name, Pageable page);
 
 	// DATAJPA-928
 	Page<User> findByNativeNamedQueryWithPageable(Pageable pageable);
