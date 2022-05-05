@@ -80,6 +80,8 @@ public class AotPersistenceUnitPostProcessor implements AotContributingBeanPostP
 					contribution.statements().addStatement("managedTypes.add($S)", managedType);
 				}
 				contribution.statements().addStatement("bean.setManagedTypes(managedTypes)");
+
+				// TODO: actually we could also do all the reflection contribution here
 			}
 		};
 	}
@@ -88,7 +90,7 @@ public class AotPersistenceUnitPostProcessor implements AotContributingBeanPostP
 
 		return new TypeScanner(classLoader)
 				.scanForTypesAnnotatedWith(jakarta.persistence.Entity.class, jakarta.persistence.MappedSuperclass.class, jakarta.persistence.Embeddable.class)
-				.scanPackages(packageNames);
+				.inPackages(packageNames);
 	}
 
 	@Override

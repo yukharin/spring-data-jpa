@@ -15,11 +15,14 @@
  */
 package org.springframework.data.jpa.aot;
 
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 import org.springframework.aot.generator.CodeContribution;
+import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.core.ResolvableType;
 import org.springframework.data.aot.AotContributingRepositoryBeanPostProcessor;
 import org.springframework.data.aot.AotRepositoryContext;
+import org.springframework.data.aot.RepositoryBeanContribution;
 import org.springframework.data.aot.TypeUtils;
 import org.springframework.util.ClassUtils;
 
@@ -29,25 +32,22 @@ import org.springframework.util.ClassUtils;
  */
 public class AotJapRepositoryPostProcessor extends AotContributingRepositoryBeanPostProcessor {
 
+	Predicate<Class<?>> filter = type -> !type.isPrimitive() && !ClassUtils.isPrimitiveArray(type) && !TypeUtils.type(type).isPartOf("java", "org.aopalliance", "org.springframework.data") ;
+
 	@Override
 	protected void contribute(AotRepositoryContext ctx, CodeContribution contribution) {
 
 		super.contribute(ctx, contribution);
 
-		// TODO: should be handled by spring-orm
 		AotJpaEntityPostProcessor aotJpaEntityPostProcessor = new AotJpaEntityPostProcessor();
-		aotJpaEntityPostProcessor.setBasePackages(ctx.getBasePackages()); // lookup entities in base packages
-		aotJpaEntityPostProcessor.setManagedTypes(ctx.getResolvedTypes().stream().filter(it -> !isJavaOrPrimitiveType(it)).collect(Collectors.toSet())); // add the entities referenced from the repository
-		aotJpaEntityPostProcessor.setBeanFactory(ctx.getBeanFactory()); // the context
-		aotJpaEntityPostProcessor.contributeManagedTypes(ctx.getBeanFactory())
-				.applyTo(contribution); // don't forget to apply stuff
+		aotJpaEntityPostProcessor.setBeanFactory(ctx.getBeanFactory());
+		ctx.getResolvedTypes().stream().filter(filter).forEach(it -> {
+			aotJpaEntityPostProcessor.contributeType(ResolvableType.forClass(it), contribution);
+		});
 	}
 
-
-	private static boolean isJavaOrPrimitiveType(Class<?> type) {
-		if (TypeUtils.type(type).isPartOf("java") || type.isPrimitive() || ClassUtils.isPrimitiveArray(type)) {
-			return true;
-		}
-		return false;
+	@Override
+	public RepositoryBeanContribution contribute(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		return super.contribute(beanDefinition, beanType, beanName);
 	}
 }

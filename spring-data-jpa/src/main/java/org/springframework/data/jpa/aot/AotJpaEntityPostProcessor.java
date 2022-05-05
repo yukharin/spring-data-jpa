@@ -29,29 +29,28 @@ import org.springframework.aot.hint.MemberCategory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.generator.AotContributingBeanPostProcessor;
-import org.springframework.beans.factory.generator.BeanInstantiationContribution;
-import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.data.aot.AotContext;
-import org.springframework.data.aot.TypeCollector;
-import org.springframework.data.aot.TypeScanner;
+import org.springframework.data.aot.AotManagedTypesPostProcessor;
 import org.springframework.data.aot.TypeUtils;
 import org.springframework.data.util.Lazy;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
  * @author Christoph Strobl
- * @since 2022/04
  */
-public class AotJpaEntityPostProcessor implements AotContributingBeanPostProcessor, BeanFactoryAware {
+public class AotJpaEntityPostProcessor extends AotManagedTypesPostProcessor implements AotContributingBeanPostProcessor, BeanFactoryAware {
 
 	private static final Collection<JpaImplementation> JPA_IMPLEMENTATIONS = Arrays.asList(new HibernateJpaImplementation());
+
+	public AotJpaEntityPostProcessor() {
+		setModulePrefix("jpa");
+	}
 
 	@Nullable
 	private BeanFactory beanFactory;
@@ -64,53 +63,10 @@ public class AotJpaEntityPostProcessor implements AotContributingBeanPostProcess
 	private Set<Class<?>> managedTypes = Collections.emptySet();
 
 	@Override
-	public BeanInstantiationContribution contribute(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
-
-		if (processedPackageNames.isEmpty() && !CollectionUtils.isEmpty(packageNames) && beanFactory instanceof ConfigurableListableBeanFactory bf) {
-			return contributeManagedTypes(bf);
-		}
-
-		return null;
+	protected void contributeType(ResolvableType type, CodeContribution contribution) {
+		processManagedType(type.toClass(), contribution, AotContext.context(beanFactory));
 	}
 
-	ManagedEntitiesContribution contributeManagedTypes(ConfigurableListableBeanFactory bf) {
-
-		Set<Class<?>> types = new LinkedHashSet<>(managedTypes);
-		types.addAll(lookupRelevantTypes(bf.getBeanClassLoader(), packageNames));
-
-		return new ManagedEntitiesContribution(types, new AotContext() {
-			@Override
-			public ConfigurableListableBeanFactory getBeanFactory() {
-				return bf;
-			}
-		});
-	}
-
-
-	Set<Class<?>> lookupRelevantTypes(ClassLoader classLoader, Collection<String> packageNames) {
-
-		processedPackageNames.addAll(packageNames);
-
-		return new TypeScanner(classLoader)
-				.scanForTypesAnnotatedWith(jakarta.persistence.Entity.class, jakarta.persistence.MappedSuperclass.class, jakarta.persistence.Embeddable.class)
-				.scanPackages(packageNames)
-				.stream()
-				.flatMap(type -> {
-					return TypeCollector.inspect(type).list().stream();
-				})
-				.filter(it -> !isJavaOrPrimitiveType(it))
-				.collect(Collectors.toSet())
-				;
-	}
-
-
-	public void setBasePackages(Set<String> basePackages) {
-		packageNames = basePackages;
-	}
-
-	public void setManagedTypes(@Nullable Set<Class<?>> managedTypes) {
-		this.managedTypes = new LinkedHashSet<>(managedTypes);
-	}
 
 	@Override
 	public int getOrder() {
@@ -119,6 +75,7 @@ public class AotJpaEntityPostProcessor implements AotContributingBeanPostProcess
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		super.setBeanFactory(beanFactory);
 		this.beanFactory = beanFactory;
 	}
 
@@ -131,23 +88,6 @@ public class AotJpaEntityPostProcessor implements AotContributingBeanPostProcess
 
 	private static Collection<JpaImplementation> availableJpaImplementation(ClassLoader classLoader) {
 		return JPA_IMPLEMENTATIONS.stream().filter(it -> it.isAvailable(classLoader)).collect(Collectors.toSet());
-	}
-
-	static class ManagedEntitiesContribution implements BeanInstantiationContribution {
-
-		AotContext ctx;
-		Set<Class<?>> mangedTypes;
-
-		public ManagedEntitiesContribution(Set<Class<?>> mangedTypes, AotContext ctx) {
-
-			this.ctx = ctx;
-			this.mangedTypes = new LinkedHashSet<>(mangedTypes);
-		}
-
-		@Override
-		public void applyTo(CodeContribution contribution) {
-			mangedTypes.forEach(it -> processManagedType(it, contribution, ctx));
-		}
 	}
 
 	static void processManagedType(Class<?> type, CodeContribution contribution, AotContext ctx) {

@@ -15,17 +15,13 @@
  */
 package org.springframework.data.jpa.aot;
 
-import static org.springframework.data.jpa.aot.RepositoryBeanContributionAssert.*;
-
-import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.generator.BeanInstantiationContribution;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.data.aot.RepositoryBeanContribution;
-import org.springframework.data.jpa.aot.AotJapRepositoryPostProcessorUnitTests.BeanContributionBuilder;
+import org.springframework.data.ManagedTypes;
+import org.springframework.data.aot.AotManagedTypesPostProcessor;
 import org.springframework.data.jpa.aot.configs.SimpleJpaConfig;
 import org.springframework.util.ClassUtils;
 
@@ -36,15 +32,8 @@ import org.springframework.util.ClassUtils;
 public class AotJpaEntityPostProcessorUnitTests {
 
 	@Test
-	@Disabled("nah - need a better solution - actually one that works")
-	void x2() {
-
+	void xxx() {
 		BeanInstantiationContribution instantiationContribution = computeConfiguration(SimpleJpaConfig.class);
-
-		BeanInstantiationContributionAssert.assertThat(instantiationContribution).codeContributionSatisfies(it -> {
-			System.out.println("it: " + it);
-		});
-
 	}
 
 	BeanInstantiationContribution computeConfiguration(Class<?> configuration) {
@@ -53,12 +42,12 @@ public class AotJpaEntityPostProcessorUnitTests {
 		ctx.register(configuration);
 		ctx.refreshForAotProcessing();
 
-		String[] repoBeanNames = ctx.getBeanNamesForType(EntityManager.class);
+		String[] repoBeanNames = ctx.getBeanNamesForType(ManagedTypes.class);
 
 		String beanName = repoBeanNames[0];
 		BeanDefinition beanDefinition = ctx.getBeanDefinition(beanName);
 
-		AotJpaEntityPostProcessor postProcessor = new AotJpaEntityPostProcessor();
+		AotManagedTypesPostProcessor postProcessor = new AotManagedTypesPostProcessor();
 		postProcessor.setBeanFactory(ctx.getDefaultListableBeanFactory());
 
 		try {

@@ -25,13 +25,11 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceUnit;
-
 import org.springframework.beans.factory.generator.AotContributingBeanPostProcessor;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -43,7 +41,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
 import org.springframework.data.jpa.aot.AotJapRepositoryPostProcessor;
-import org.springframework.data.jpa.aot.AotPersistenceUnitPostProcessor;
+import org.springframework.data.jpa.aot.AotJpaEntityPostProcessor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.support.DefaultJpaContext;
 import org.springframework.data.jpa.repository.support.EntityManagerBeanDefinitionRegistrarPostProcessor;
@@ -56,7 +54,6 @@ import org.springframework.data.repository.config.XmlRepositoryConfigurationSour
 import org.springframework.lang.Nullable;
 import org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -93,7 +90,7 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 	}
 
 	@Override
-	protected String getModulePrefix() {
+	public String getModulePrefix() {
 		return getModuleName().toLowerCase(Locale.US);
 	}
 
@@ -104,7 +101,7 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 
 	@Override
 	protected Collection<Class<?>> getIdentifyingTypes() {
-		return Collections.<Class<?>> singleton(JpaRepository.class);
+		return Collections.<Class<?>>singleton(JpaRepository.class);
 	}
 
 	@Override
@@ -179,7 +176,6 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 			contextDefinition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
 
 			return contextDefinition;
-
 		}, registry, JPA_CONTEXT_BEAN_NAME, source);
 
 		registerIfNotAlreadyRegistered(() -> new RootBeanDefinition(JPA_METAMODEL_CACHE_CLEANUP_CLASSNAME), registry,
@@ -197,10 +193,12 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 			builder.addConstructorArgValue(value);
 
 			return builder.getBeanDefinition();
-
 		}, registry, JpaEvaluationContextExtension.class.getName(), source);
 
-
+		// AOT
+		if(!registry.isBeanNameInUse(AotJpaEntityPostProcessor.class.getName())) {
+			registry.registerBeanDefinition(AotJpaEntityPostProcessor.class.getName(), BeanDefinitionBuilder.rootBeanDefinition(AotJpaEntityPostProcessor.class).getBeanDefinition());
+		}
 	}
 
 	@Override
@@ -261,7 +259,8 @@ public class JpaRepositoryConfigExtension extends RepositoryConfigurationExtensi
 			AGENT_CLASSES = Collections.unmodifiableSet(agentClasses);
 		}
 
-		private LazyJvmAgent() {}
+		private LazyJvmAgent() {
+		}
 
 		/**
 		 * Determine if any agent is active.
