@@ -806,4 +806,21 @@ class QueryUtilsUnitTests {
 				+ ") as timestamp\n" //
 				+ "from foo f", sort)).endsWith("order by f.age desc");
 	}
+
+	@Test // GH-2536
+	void textBlocksShouldNotAffectSorting() {
+
+		Sort sort = Sort.by(Order.desc("age"));
+
+		assertThat(QueryUtils.applySorting("SELECT * FROM t \n" //
+				+ "WHERE t.name = :name\n" //
+				+ "ORDER BY t.date\n" //
+				+ "", sort)).endsWith("ORDER BY t.date\n" + ", age desc");
+
+		assertThat(QueryUtils.applySorting("""
+					SELECT * FROM t
+					WHERE t.name = :name
+					ORDER BY t.date
+				""", sort)).endsWith("ORDER BY t.date\n" + ", age desc");
+	}
 }

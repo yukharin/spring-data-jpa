@@ -19,14 +19,14 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
-
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -479,6 +479,24 @@ public class JpaQueryMethodUnitTests {
 		assertThat(method.getEntityGraph().getType()).isEqualTo(EntityGraphType.LOAD);
 	}
 
+	@Test // GH-2536
+	void textBlocksShouldNotAffectSorting() throws Exception {
+
+		JpaQueryMethod method = getQueryMethod(ValidRepository.class, "findByJavaTextBlock", Sort.class);
+
+		assertThat(method.getAnnotatedQuery()).contains( //
+				"SELECT * FROM t", //
+				"WHERE t.name = :name", //
+				"ORDER BY t.date").endsWith("ORDER BY t.date\n");
+
+		method = getQueryMethod(ValidRepository.class, "findByJavaTextBlock");
+
+		assertThat(method.getAnnotatedQuery()).contains( //
+				"SELECT * FROM t", //
+				"WHERE t.name = :name", //
+				"ORDER BY t.date").endsWith("ORDER BY t.date\n");
+	}
+
 	/**
 	 * Interface to define invalid repository methods for testing.
 	 *
@@ -543,6 +561,20 @@ public class JpaQueryMethodUnitTests {
 
 		@CustomComposedAnnotationWithAliasFor
 		void withMetaAnnotationUsingAliasFor();
+
+		@Query("""
+					SELECT * FROM t
+					WHERE t.name = :name
+					ORDER BY t.date
+				""")
+		List<User> findByJavaTextBlock();
+
+		@Query("""
+					SELECT * FROM t
+					WHERE t.name = :name
+					ORDER BY t.date
+				""")
+		List<User> findByJavaTextBlock(Sort sort);
 	}
 
 	interface JpaRepositoryOverride extends JpaRepository<User, Integer> {
