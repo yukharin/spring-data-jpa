@@ -34,6 +34,7 @@ import org.springframework.data.jpa.domain.sample.Role;
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.data.jpa.provider.PersistenceProvider;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.Repository;
@@ -67,7 +68,8 @@ public class AbstractStringBasedJpaQueryIntegrationTests {
 		when(mock.getMetamodel()).thenReturn(em.getMetamodel());
 
 		JpaQueryMethod method = getMethod("findRolesByEmailAddress", String.class);
-		AbstractStringBasedJpaQuery jpaQuery = new SimpleJpaQuery(method, mock, null, QueryRewriter.IdentityQueryRewriter.INSTANCE,
+		AbstractStringBasedJpaQuery jpaQuery = new SimpleJpaQuery(method, mock, null,
+				QueryRewriter.IdentityQueryRewriter.INSTANCE, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE,
 				QueryMethodEvaluationContextProvider.DEFAULT, new SpelExpressionParser());
 
 		jpaQuery.createJpaQuery(method.getAnnotatedQuery(), Sort.unsorted(), null,

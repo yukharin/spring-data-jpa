@@ -19,12 +19,12 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Method;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.metamodel.Metamodel;
+
+import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +33,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.provider.QueryExtractor;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -87,7 +87,8 @@ class NamedQueryUnitTests {
 		JpaQueryMethod queryMethod = new JpaQueryMethod(method, metadata, projectionFactory, extractor);
 
 		when(em.createNamedQuery(queryMethod.getNamedCountQueryName())).thenThrow(new IllegalArgumentException());
-		assertThatExceptionOfType(QueryCreationException.class).isThrownBy(() -> NamedQuery.lookupFrom(queryMethod, em));
+		assertThatExceptionOfType(QueryCreationException.class).isThrownBy(
+				() -> NamedQuery.lookupFrom(queryMethod, em, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE));
 	}
 
 	@Test // DATAJPA-142
@@ -99,7 +100,8 @@ class NamedQueryUnitTests {
 
 		TypedQuery<Long> countQuery = mock(TypedQuery.class);
 		when(em.createNamedQuery(eq(queryMethod.getNamedCountQueryName()), eq(Long.class))).thenReturn(countQuery);
-		NamedQuery query = (NamedQuery) NamedQuery.lookupFrom(queryMethod, em);
+		NamedQuery query = (NamedQuery) NamedQuery.lookupFrom(queryMethod, em,
+				QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE);
 
 		query.doCreateCountQuery(new JpaParametersParameterAccessor(queryMethod.getParameters(), new Object[1]));
 		verify(em, times(1)).createNamedQuery(queryMethod.getNamedCountQueryName(), Long.class);

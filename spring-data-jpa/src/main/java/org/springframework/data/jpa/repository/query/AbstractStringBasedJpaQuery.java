@@ -18,11 +18,9 @@ package org.springframework.data.jpa.repository.query;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.data.repository.query.ResultProcessor;
@@ -65,10 +63,10 @@ abstract class AbstractStringBasedJpaQuery extends AbstractJpaQuery {
 	 * @param queryRewriter must not be {@literal null}.
 	 */
 	public AbstractStringBasedJpaQuery(JpaQueryMethod method, EntityManager em, String queryString,
-			@Nullable String countQueryString, QueryRewriter queryRewriter, QueryMethodEvaluationContextProvider evaluationContextProvider,
-			SpelExpressionParser parser) {
+			@Nullable String countQueryString, QueryRewriter queryRewriter, QueryPostProcessor queryPostProcessor,
+			QueryMethodEvaluationContextProvider evaluationContextProvider, SpelExpressionParser parser) {
 
-		super(method, em);
+		super(method, em, queryPostProcessor);
 
 		Assert.hasText(queryString, "Query string must not be null or empty");
 		Assert.notNull(evaluationContextProvider, "ExpressionEvaluationContextProvider must not be null");

@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.springframework.data.jpa.repository.query.QueryPostProcessorProvider;
 import org.springframework.data.jpa.repository.query.QueryRewriterProvider;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.repository.cdi.CdiRepositoryBean;
@@ -45,6 +46,7 @@ class JpaRepositoryBean<T> extends CdiRepositoryBean<T> {
 
 	private final Bean<EntityManager> entityManagerBean;
 	private final QueryRewriterProvider queryRewriterProvider;
+	private final QueryPostProcessorProvider queryPostProcessor;
 
 	/**
 	 * Constructs a {@link JpaRepositoryBean}.
@@ -63,6 +65,7 @@ class JpaRepositoryBean<T> extends CdiRepositoryBean<T> {
 		Assert.notNull(entityManagerBean, "EntityManager bean must not be null");
 		this.entityManagerBean = entityManagerBean;
 		this.queryRewriterProvider = new BeanManagerQueryRewriterProvider(beanManager);
+		this.queryPostProcessor = new BeanManagerQueryPostProcessorProvider(beanManager);
 	}
 
 	@Override
@@ -73,6 +76,7 @@ class JpaRepositoryBean<T> extends CdiRepositoryBean<T> {
 		Supplier<RepositoryFactorySupport> repositoryFactorySupportSupplier = () -> {
 			JpaRepositoryFactory jpaRepositoryFactory = new JpaRepositoryFactory(entityManager);
 			jpaRepositoryFactory.setQueryRewriterProvider(queryRewriterProvider);
+			jpaRepositoryFactory.setQueryPostProcessorProvider(queryPostProcessor);
 			return jpaRepositoryFactory;
 		};
 

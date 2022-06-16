@@ -104,7 +104,7 @@ public class User {
 
 	@ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE }) private Set<User> colleagues;
 
-	@ManyToMany private Set<Role> roles;
+	@ManyToMany(fetch = FetchType.EAGER) private Set<Role> roles;
 
 	@ManyToOne private User manager;
 

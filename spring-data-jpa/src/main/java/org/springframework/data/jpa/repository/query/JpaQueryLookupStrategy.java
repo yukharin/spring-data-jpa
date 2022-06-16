@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
@@ -70,6 +71,7 @@ public final class JpaQueryLookupStrategy {
 		private final EntityManager em;
 		private final JpaQueryMethodFactory queryMethodFactory;
 		private final QueryRewriterProvider queryRewriterProvider;
+		private final QueryPostProcessorProvider queryPostProcessorProvider;
 
 		/**
 		 * Creates a new {@link AbstractQueryLookupStrategy}.
@@ -78,7 +80,7 @@ public final class JpaQueryLookupStrategy {
 		 * @param queryMethodFactory must not be {@literal null}.
 		 */
 		public AbstractQueryLookupStrategy(EntityManager em, JpaQueryMethodFactory queryMethodFactory,
-				QueryRewriterProvider queryRewriterProvider) {
+				QueryRewriterProvider queryRewriterProvider, QueryPostProcessorProvider queryPostProcessorProvider) {
 
 			Assert.notNull(em, "EntityManager must not be null");
 			Assert.notNull(queryMethodFactory, "JpaQueryMethodFactory must not be null");
@@ -86,17 +88,19 @@ public final class JpaQueryLookupStrategy {
 			this.em = em;
 			this.queryMethodFactory = queryMethodFactory;
 			this.queryRewriterProvider = queryRewriterProvider;
+			this.queryPostProcessorProvider = queryPostProcessorProvider;
 		}
 
 		@Override
 		public final RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory,
 				NamedQueries namedQueries) {
 			JpaQueryMethod queryMethod = queryMethodFactory.build(method, metadata, factory);
-			return resolveQuery(queryMethod, queryRewriterProvider.getQueryRewriter(queryMethod), em, namedQueries);
+			return resolveQuery(queryMethod, queryRewriterProvider.getQueryRewriter(queryMethod),
+					queryPostProcessorProvider.getQueryPostProcessor(queryMethod), em, namedQueries);
 		}
 
 		protected abstract RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter,
-				EntityManager em, NamedQueries namedQueries);
+				QueryPostProcessor queryPostProcessor, EntityManager em, NamedQueries namedQueries);
 
 	}
 
@@ -111,17 +115,18 @@ public final class JpaQueryLookupStrategy {
 		private final EscapeCharacter escape;
 
 		public CreateQueryLookupStrategy(EntityManager em, JpaQueryMethodFactory queryMethodFactory,
-				QueryRewriterProvider queryRewriterProvider, EscapeCharacter escape) {
+				QueryRewriterProvider queryRewriterProvider, QueryPostProcessorProvider queryPostProcessorProvider,
+				EscapeCharacter escape) {
 
-			super(em, queryMethodFactory, queryRewriterProvider);
+			super(em, queryMethodFactory, queryRewriterProvider, queryPostProcessorProvider);
 
 			this.escape = escape;
 		}
 
 		@Override
-		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter, EntityManager em,
-				NamedQueries namedQueries) {
-			return new PartTreeJpaQuery(method, em, escape);
+		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter,
+				QueryPostProcessor queryPostProcessor, EntityManager em, NamedQueries namedQueries) {
+			return new PartTreeJpaQuery(method, em, queryPostProcessor, escape);
 		}
 	}
 
@@ -145,19 +150,20 @@ public final class JpaQueryLookupStrategy {
 		 * @param evaluationContextProvider must not be {@literal null}.
 		 */
 		public DeclaredQueryLookupStrategy(EntityManager em, JpaQueryMethodFactory queryMethodFactory,
-				QueryMethodEvaluationContextProvider evaluationContextProvider, QueryRewriterProvider queryRewriterProvider) {
+				QueryMethodEvaluationContextProvider evaluationContextProvider, QueryRewriterProvider queryRewriterProvider,
+				QueryPostProcessorProvider queryPostProcessorProvider) {
 
-			super(em, queryMethodFactory, queryRewriterProvider);
+			super(em, queryMethodFactory, queryRewriterProvider, queryPostProcessorProvider);
 
 			this.evaluationContextProvider = evaluationContextProvider;
 		}
 
 		@Override
-		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter, EntityManager em,
-				NamedQueries namedQueries) {
+		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter,
+				QueryPostProcessor queryPostProcessor, EntityManager em, NamedQueries namedQueries) {
 
 			if (method.isProcedureQuery()) {
-				return JpaQueryFactory.INSTANCE.fromProcedureAnnotation(method, em);
+				return JpaQueryFactory.INSTANCE.fromProcedureAnnotation(method, em, queryPostProcessor);
 			}
 
 			if (StringUtils.hasText(method.getAnnotatedQuery())) {
@@ -168,16 +174,16 @@ public final class JpaQueryLookupStrategy {
 				}
 
 				return JpaQueryFactory.INSTANCE.fromMethodWithQueryString(method, em, method.getRequiredAnnotatedQuery(),
-						getCountQuery(method, namedQueries, em), queryRewriter, evaluationContextProvider);
+						getCountQuery(method, namedQueries, em), queryRewriter, queryPostProcessor, evaluationContextProvider);
 			}
 
 			String name = method.getNamedQueryName();
 			if (namedQueries.hasQuery(name)) {
 				return JpaQueryFactory.INSTANCE.fromMethodWithQueryString(method, em, namedQueries.getQuery(name),
-						getCountQuery(method, namedQueries, em), queryRewriter, evaluationContextProvider);
+						getCountQuery(method, namedQueries, em), queryRewriter, queryPostProcessor, evaluationContextProvider);
 			}
 
-			RepositoryQuery query = NamedQuery.lookupFrom(method, em);
+			RepositoryQuery query = NamedQuery.lookupFrom(method, em, queryPostProcessor);
 
 			return query != null //
 					? query //
@@ -234,9 +240,9 @@ public final class JpaQueryLookupStrategy {
 		 */
 		public CreateIfNotFoundQueryLookupStrategy(EntityManager em, JpaQueryMethodFactory queryMethodFactory,
 				CreateQueryLookupStrategy createStrategy, DeclaredQueryLookupStrategy lookupStrategy,
-				QueryRewriterProvider queryRewriterProvider) {
+				QueryRewriterProvider queryRewriterProvider, QueryPostProcessorProvider queryPostProcessorProvider) {
 
-			super(em, queryMethodFactory, queryRewriterProvider);
+			super(em, queryMethodFactory, queryRewriterProvider, queryPostProcessorProvider);
 
 			Assert.notNull(createStrategy, "CreateQueryLookupStrategy must not be null");
 			Assert.notNull(lookupStrategy, "DeclaredQueryLookupStrategy must not be null");
@@ -246,16 +252,17 @@ public final class JpaQueryLookupStrategy {
 		}
 
 		@Override
-		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter, EntityManager em,
-				NamedQueries namedQueries) {
+		protected RepositoryQuery resolveQuery(JpaQueryMethod method, QueryRewriter queryRewriter,
+				QueryPostProcessor queryPostProcessor, EntityManager em, NamedQueries namedQueries) {
 
-			RepositoryQuery lookupQuery = lookupStrategy.resolveQuery(method, queryRewriter, em, namedQueries);
+			RepositoryQuery lookupQuery = lookupStrategy.resolveQuery(method, queryRewriter, queryPostProcessor, em,
+					namedQueries);
 
 			if (lookupQuery != NO_QUERY) {
 				return lookupQuery;
 			}
 
-			return createStrategy.resolveQuery(method, queryRewriter, em, namedQueries);
+			return createStrategy.resolveQuery(method, queryRewriter, queryPostProcessor, em, namedQueries);
 		}
 	}
 
@@ -270,22 +277,26 @@ public final class JpaQueryLookupStrategy {
 	 */
 	public static QueryLookupStrategy create(EntityManager em, JpaQueryMethodFactory queryMethodFactory,
 			@Nullable Key key, QueryMethodEvaluationContextProvider evaluationContextProvider,
-			QueryRewriterProvider queryRewriterProvider, EscapeCharacter escape) {
+			QueryRewriterProvider queryRewriterProvider, QueryPostProcessorProvider queryPostProcessorProvider,
+			EscapeCharacter escape) {
 
 		Assert.notNull(em, "EntityManager must not be null");
 		Assert.notNull(evaluationContextProvider, "EvaluationContextProvider must not be null");
 
 		switch (key != null ? key : Key.CREATE_IF_NOT_FOUND) {
 			case CREATE:
-				return new CreateQueryLookupStrategy(em, queryMethodFactory, queryRewriterProvider, escape);
+				return new CreateQueryLookupStrategy(em, queryMethodFactory, queryRewriterProvider, queryPostProcessorProvider,
+						escape);
 			case USE_DECLARED_QUERY:
-				return new DeclaredQueryLookupStrategy(em, queryMethodFactory, evaluationContextProvider,
-						queryRewriterProvider);
+				return new DeclaredQueryLookupStrategy(em, queryMethodFactory, evaluationContextProvider, queryRewriterProvider,
+						queryPostProcessorProvider);
 			case CREATE_IF_NOT_FOUND:
 				return new CreateIfNotFoundQueryLookupStrategy(em, queryMethodFactory,
-						new CreateQueryLookupStrategy(em, queryMethodFactory, queryRewriterProvider, escape),
-						new DeclaredQueryLookupStrategy(em, queryMethodFactory, evaluationContextProvider, queryRewriterProvider),
-						queryRewriterProvider);
+						new CreateQueryLookupStrategy(em, queryMethodFactory, queryRewriterProvider, queryPostProcessorProvider,
+								escape),
+						new DeclaredQueryLookupStrategy(em, queryMethodFactory, evaluationContextProvider, queryRewriterProvider,
+								queryPostProcessorProvider),
+						queryRewriterProvider, queryPostProcessorProvider);
 			default:
 				throw new IllegalArgumentException(String.format("Unsupported query lookup strategy %s", key));
 		}

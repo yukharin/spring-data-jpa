@@ -17,6 +17,7 @@ package org.springframework.data.jpa.repository.query;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -46,13 +47,13 @@ enum JpaQueryFactory {
 	 * @return
 	 */
 	AbstractJpaQuery fromMethodWithQueryString(JpaQueryMethod method, EntityManager em, String queryString,
-			@Nullable String countQueryString, QueryRewriter queryRewriter,
+			@Nullable String countQueryString, QueryRewriter queryRewriter, QueryPostProcessor queryPostProcessor,
 			QueryMethodEvaluationContextProvider evaluationContextProvider) {
 
 		return method.isNativeQuery()
-				? new NativeJpaQuery(method, em, queryString, countQueryString, queryRewriter, evaluationContextProvider,
+				? new NativeJpaQuery(method, em, queryString, countQueryString, queryRewriter, queryPostProcessor, evaluationContextProvider,
 						PARSER)
-				: new SimpleJpaQuery(method, em, queryString, countQueryString, queryRewriter, evaluationContextProvider,
+				: new SimpleJpaQuery(method, em, queryString, countQueryString, queryRewriter, queryPostProcessor, evaluationContextProvider,
 						PARSER);
 	}
 
@@ -63,7 +64,7 @@ enum JpaQueryFactory {
 	 * @param em must not be {@literal null}.
 	 * @return
 	 */
-	public StoredProcedureJpaQuery fromProcedureAnnotation(JpaQueryMethod method, EntityManager em) {
-		return new StoredProcedureJpaQuery(method, em);
+	public StoredProcedureJpaQuery fromProcedureAnnotation(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
+		return new StoredProcedureJpaQuery(method, em, queryPostProcessor);
 	}
 }

@@ -15,16 +15,17 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NamedStoredProcedureQuery;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
 import jakarta.persistence.TypedQuery;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.query.JpaParameters.JpaParameter;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.QueryMethod;
@@ -57,9 +58,9 @@ class StoredProcedureJpaQuery extends AbstractJpaQuery {
 	 * @param method must not be {@literal null}
 	 * @param em must not be {@literal null}
 	 */
-	StoredProcedureJpaQuery(JpaQueryMethod method, EntityManager em) {
+	StoredProcedureJpaQuery(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
 
-		super(method, em);
+		super(method, em, queryPostProcessor);
 		this.procedureAttributes = method.getProcedureAttributes();
 		this.useNamedParameters = useNamedParameters(method);
 	}
@@ -236,7 +237,6 @@ class StoredProcedureJpaQuery extends AbstractJpaQuery {
 	}
 
 	/**
-	 *
 	 * @return true if the stored procedure will use a ResultSet to return data and not output parameters
 	 */
 	private boolean isResultSetProcedure() {

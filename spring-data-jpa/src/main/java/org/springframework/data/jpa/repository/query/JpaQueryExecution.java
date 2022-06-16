@@ -15,15 +15,15 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.Query;
 import jakarta.persistence.StoredProcedureQuery;
+
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.ConfigurableConversionService;
@@ -94,6 +94,10 @@ public abstract class JpaQueryExecution {
 
 		if (result == null) {
 			return null;
+		}
+
+		if (query.hasPostProcessor()) {
+			result = query.getPostProcessor().postProcess(result);
 		}
 
 		JpaQueryMethod queryMethod = query.getQueryMethod();

@@ -15,15 +15,16 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import java.util.List;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 
+import java.util.List;
+
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.query.JpaParameters.JpaParameter;
 import org.springframework.data.jpa.repository.query.JpaQueryExecution.DeleteExecution;
 import org.springframework.data.jpa.repository.query.JpaQueryExecution.ExistsExecution;
@@ -62,8 +63,8 @@ public class PartTreeJpaQuery extends AbstractJpaQuery {
 	 * @param method must not be {@literal null}.
 	 * @param em must not be {@literal null}.
 	 */
-	PartTreeJpaQuery(JpaQueryMethod method, EntityManager em) {
-		this(method, em, EscapeCharacter.DEFAULT);
+	PartTreeJpaQuery(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
+		this(method, em, queryPostProcessor, EscapeCharacter.DEFAULT);
 	}
 
 	/**
@@ -73,9 +74,10 @@ public class PartTreeJpaQuery extends AbstractJpaQuery {
 	 * @param em must not be {@literal null}.
 	 * @param escape character used for escaping characters used as patterns in LIKE-expressions.
 	 */
-	PartTreeJpaQuery(JpaQueryMethod method, EntityManager em, EscapeCharacter escape) {
+	PartTreeJpaQuery(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor,
+			EscapeCharacter escape) {
 
-		super(method, em);
+		super(method, em, queryPostProcessor);
 
 		this.em = em;
 		this.escape = escape;

@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.jpa.provider.PersistenceProvider;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.query.JpaQueryExecution.CollectionExecution;
 import org.springframework.data.jpa.repository.query.JpaQueryExecution.ModifyingExecution;
 import org.springframework.data.jpa.repository.query.JpaQueryExecution.PagedExecution;
@@ -69,6 +70,7 @@ public abstract class AbstractJpaQuery implements RepositoryQuery {
 	private final JpaMetamodel metamodel;
 	private final PersistenceProvider provider;
 	private final Lazy<JpaQueryExecution> execution;
+	private final QueryPostProcessor queryPostProcessor;
 
 	final Lazy<ParameterBinder> parameterBinder = Lazy.of(this::createBinder);
 
@@ -78,13 +80,14 @@ public abstract class AbstractJpaQuery implements RepositoryQuery {
 	 * @param method
 	 * @param em
 	 */
-	public AbstractJpaQuery(JpaQueryMethod method, EntityManager em) {
+	public AbstractJpaQuery(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
 
 		Assert.notNull(method, "JpaQueryMethod must not be null");
 		Assert.notNull(em, "EntityManager must not be null");
 
 		this.method = method;
 		this.em = em;
+		this.queryPostProcessor = queryPostProcessor;
 		this.metamodel = JpaMetamodel.of(em.getMetamodel());
 		this.provider = PersistenceProvider.fromEntityManager(em);
 		this.execution = Lazy.of(() -> {
@@ -285,6 +288,14 @@ public abstract class AbstractJpaQuery implements RepositoryQuery {
 	 * @return
 	 */
 	protected abstract Query doCreateCountQuery(JpaParametersParameterAccessor accessor);
+
+	public boolean hasPostProcessor() {
+		return !QueryPostProcessor.IdentityQueryPostProcessor.class.isInstance(queryPostProcessor);
+	}
+
+	public QueryPostProcessor getPostProcessor() {
+		return queryPostProcessor;
+	}
 
 	static class TupleConverter implements Converter<Object, Object> {
 

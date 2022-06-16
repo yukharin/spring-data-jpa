@@ -37,7 +37,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +44,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.data.jpa.provider.QueryExtractor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.jpa.repository.sample.UserRepository;
 import org.springframework.data.projection.ProjectionFactory;
@@ -114,7 +114,8 @@ class SimpleJpaQueryUnitTests {
 		when(em.createQuery("foo", Long.class)).thenReturn(typedQuery);
 
 		SimpleJpaQuery jpaQuery = new SimpleJpaQuery(method, em, "select u from User u", null,
-				QueryRewriter.IdentityQueryRewriter.INSTANCE, EVALUATION_CONTEXT_PROVIDER, PARSER);
+				QueryRewriter.IdentityQueryRewriter.INSTANCE, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE,
+				EVALUATION_CONTEXT_PROVIDER, PARSER);
 
 		assertThat(jpaQuery.createCountQuery(new JpaParametersParameterAccessor(method.getParameters(), new Object[] {})))
 				.isEqualTo(typedQuery);
@@ -129,7 +130,8 @@ class SimpleJpaQueryUnitTests {
 		JpaQueryMethod queryMethod = new JpaQueryMethod(method, metadata, factory, extractor);
 
 		AbstractJpaQuery jpaQuery = new SimpleJpaQuery(queryMethod, em, "select u from User u", null,
-				QueryRewriter.IdentityQueryRewriter.INSTANCE, EVALUATION_CONTEXT_PROVIDER, PARSER);
+				QueryRewriter.IdentityQueryRewriter.INSTANCE, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE,
+				EVALUATION_CONTEXT_PROVIDER, PARSER);
 		jpaQuery.createCountQuery(
 				new JpaParametersParameterAccessor(queryMethod.getParameters(), new Object[] { PageRequest.of(1, 10) }));
 
@@ -145,7 +147,7 @@ class SimpleJpaQueryUnitTests {
 		JpaQueryMethod queryMethod = new JpaQueryMethod(method, metadata, factory, extractor);
 		AbstractJpaQuery jpaQuery = JpaQueryFactory.INSTANCE.fromMethodWithQueryString(queryMethod, em,
 				queryMethod.getAnnotatedQuery(), null, QueryRewriter.IdentityQueryRewriter.INSTANCE,
-				EVALUATION_CONTEXT_PROVIDER);
+				QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE, EVALUATION_CONTEXT_PROVIDER);
 
 		assertThat(jpaQuery instanceof NativeJpaQuery).isTrue();
 
@@ -249,7 +251,7 @@ class SimpleJpaQueryUnitTests {
 
 		AbstractJpaQuery jpaQuery = new SimpleJpaQuery(queryMethod, em, "select u from User u",
 				"select count(u.id) from #{#entityName} u", QueryRewriter.IdentityQueryRewriter.INSTANCE,
-				EVALUATION_CONTEXT_PROVIDER, PARSER);
+				QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE, EVALUATION_CONTEXT_PROVIDER, PARSER);
 		jpaQuery.createCountQuery(
 				new JpaParametersParameterAccessor(queryMethod.getParameters(), new Object[] { PageRequest.of(1, 10) }));
 
@@ -261,7 +263,8 @@ class SimpleJpaQueryUnitTests {
 
 		JpaQueryMethod queryMethod = new JpaQueryMethod(method, metadata, factory, extractor);
 		return JpaQueryFactory.INSTANCE.fromMethodWithQueryString(queryMethod, em, queryMethod.getAnnotatedQuery(), null,
-				QueryRewriter.IdentityQueryRewriter.INSTANCE, EVALUATION_CONTEXT_PROVIDER);
+				QueryRewriter.IdentityQueryRewriter.INSTANCE, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE,
+				EVALUATION_CONTEXT_PROVIDER);
 	}
 
 	interface SampleRepository {

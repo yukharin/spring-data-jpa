@@ -19,9 +19,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.data.jpa.support.EntityManagerTestUtils.*;
 
-import java.lang.reflect.Method;
-import java.util.List;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -29,17 +26,20 @@ import jakarta.persistence.Query;
 import jakarta.persistence.QueryHint;
 import jakarta.persistence.TypedQuery;
 
+import java.lang.reflect.Method;
+import java.util.List;
+
 import org.junit.Assume;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.data.jpa.provider.PersistenceProvider;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.EntityGraph.EntityGraphType;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
@@ -180,7 +180,7 @@ public class AbstractJpaQueryTests {
 	class DummyJpaQuery extends AbstractJpaQuery {
 
 		DummyJpaQuery(JpaQueryMethod method, EntityManager em) {
-			super(method, em);
+			super(method, em, QueryPostProcessor.IdentityQueryPostProcessor.INSTANCE);
 		}
 
 		@Override

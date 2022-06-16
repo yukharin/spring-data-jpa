@@ -23,6 +23,7 @@ import jakarta.persistence.TypedQuery;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.jpa.provider.QueryExtractor;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryCreationException;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -57,9 +58,9 @@ final class NamedQuery extends AbstractJpaQuery {
 	/**
 	 * Creates a new {@link NamedQuery}.
 	 */
-	private NamedQuery(JpaQueryMethod method, EntityManager em) {
+	private NamedQuery(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
 
-		super(method, em);
+		super(method, em, queryPostProcessor);
 
 		this.queryName = method.getNamedQueryName();
 		this.countQueryName = method.getNamedCountQueryName();
@@ -133,7 +134,7 @@ final class NamedQuery extends AbstractJpaQuery {
 	 * @return
 	 */
 	@Nullable
-	public static RepositoryQuery lookupFrom(JpaQueryMethod method, EntityManager em) {
+	public static RepositoryQuery lookupFrom(JpaQueryMethod method, EntityManager em, QueryPostProcessor queryPostProcessor) {
 
 		final String queryName = method.getNamedQueryName();
 
@@ -147,7 +148,7 @@ final class NamedQuery extends AbstractJpaQuery {
 
 		try {
 
-			RepositoryQuery query = new NamedQuery(method, em);
+			RepositoryQuery query = new NamedQuery(method, em, queryPostProcessor);
 			if (LOG.isDebugEnabled()) {
 				LOG.debug(String.format("Found named query %s", queryName));
 			}

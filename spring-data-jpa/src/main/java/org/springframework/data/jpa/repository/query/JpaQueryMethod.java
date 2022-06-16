@@ -33,8 +33,10 @@ import org.springframework.data.jpa.provider.QueryExtractor;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.QueryPostProcess;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.jpa.repository.QueryPostProcessor;
 import org.springframework.data.jpa.repository.QueryRewriter;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -440,5 +442,9 @@ public class JpaQueryMethod extends QueryMethod {
 	 */
 	public Class<? extends QueryRewriter> getQueryRewriter() {
 		return getMergedOrDefaultAnnotationValue("queryRewriter", Query.class, Class.class);
+	}
+
+	public Class<? extends QueryPostProcessor> getQueryPostProcessor() {
+		return getMergedOrDefaultAnnotationValue("queryPostProcessor", QueryPostProcess.class, Class.class);
 	}
 }
