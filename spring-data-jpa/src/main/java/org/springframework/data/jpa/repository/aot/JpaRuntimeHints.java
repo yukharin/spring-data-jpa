@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.data.jpa.aot;
+package org.springframework.data.jpa.repository.aot;
 
 import java.util.Arrays;
 
@@ -24,15 +24,20 @@ import org.springframework.aot.hint.TypeReference;
 import org.springframework.data.jpa.domain.support.AuditingBeanFactoryPostProcessor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.support.QuerydslJpaPredicateExecutor;
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
+import org.springframework.data.querydsl.QuerydslUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
+ * Runtime hints for JPA AOT processing.
+ *
  * @author Christoph Strobl
  * @since 3.0
  */
-public class JpaRuntimeHints implements RuntimeHintsRegistrar {
+class JpaRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
@@ -49,9 +54,10 @@ public class JpaRuntimeHints implements RuntimeHintsRegistrar {
 							.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS));
 
 			hints.reflection().registerTypes(Arrays.asList( //
-							TypeReference.of(AuditingBeanFactoryPostProcessor.class), //
-							TypeReference.of(AuditingEntityListener.class)),
-					hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS));
+					TypeReference.of(AuditingBeanFactoryPostProcessor.class), //
+					TypeReference.of(AuditingEntityListener.class)),
+					hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+							MemberCategory.INVOKE_DECLARED_METHODS));
 		}
 
 		hints.reflection().registerType(TypeReference.of(SimpleJpaRepository.class),
@@ -59,5 +65,12 @@ public class JpaRuntimeHints implements RuntimeHintsRegistrar {
 
 		// needs to present for evaluating default attribute values in JpaQueryMethod
 		hints.reflection().registerType(Query.class, hint -> hint.withMembers(MemberCategory.INVOKE_PUBLIC_METHODS));
+
+		if (QuerydslUtils.QUERY_DSL_PRESENT) {
+
+			hints.reflection().registerType(QuerydslJpaPredicateExecutor.class,
+					hint -> hint.withMembers(MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS, MemberCategory.INVOKE_PUBLIC_METHODS)
+							.onReachableType(QuerydslPredicateExecutor.class));
+		}
 	}
 }
