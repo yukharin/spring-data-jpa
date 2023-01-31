@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  */
 public class ParameterBinder {
 
-	static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to use provide names for method parameters; Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters";
+	static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to provide names for method parameters; Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters";
 
 	private final JpaParameters parameters;
 	private final Iterable<QueryParameterSetter> parameterSetters;

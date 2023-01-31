@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,10 +25,13 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Root;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -41,11 +40,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration({ "classpath:application-context.xml"
-		// , "classpath:eclipselink.xml"
-		// , "classpath:openjpa.xml"
+// , "classpath:eclipselink.xml"
+// , "classpath:openjpa.xml"
 })
 @Transactional
 class SimpleJpaParameterBindingTests {
@@ -71,7 +71,7 @@ class SimpleJpaParameterBindingTests {
 		query.setParameter(parameter, new String[] { "Dave", "Carter" });
 
 		List<User> result = query.getResultList();
-		assertThat(result.isEmpty()).isFalse();
+		assertThat(result).isNotEmpty();
 	}
 
 	@Test
@@ -94,7 +94,7 @@ class SimpleJpaParameterBindingTests {
 		query.setParameter(parameter, Arrays.asList("Dave"));
 
 		List<User> result = query.getResultList();
-		assertThat(result.isEmpty()).isFalse();
+		assertThat(result).isNotEmpty();
 		assertThat(result.get(0)).isEqualTo(user);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.springframework.data.jpa.mapping;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.Collections;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
@@ -30,6 +29,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Transient;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.Metamodel;
+
+import java.util.Collections;
 
 import org.jmolecules.ddd.types.AggregateRoot;
 import org.jmolecules.ddd.types.Association;
@@ -43,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.annotation.AccessType.Type;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.data.util.TypeInformation;
 
 /**
@@ -52,10 +52,11 @@ import org.springframework.data.util.TypeInformation;
  * @author Oliver Gierke
  * @author Greg Turnquist
  * @author Jens Schauder
+ * @author Erik Pellizzon
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class JpaPersistentPropertyImplUnitTests {
+class JpaPersistentPropertyImplUnitTests {
 
 	@Mock Metamodel model;
 
@@ -146,8 +147,7 @@ public class JpaPersistentPropertyImplUnitTests {
 
 		Iterable<? extends TypeInformation<?>> entityType = property.getPersistentEntityTypeInformation();
 		assertThat(entityType.iterator().hasNext()).isTrue();
-		assertThat(entityType.iterator().next())
-				.isEqualTo(ClassTypeInformation.from(Implementation.class));
+		assertThat(entityType.iterator().next()).isEqualTo(TypeInformation.of(Implementation.class));
 	}
 
 	@Test // DATAJPA-716

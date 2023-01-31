@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,6 +25,10 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Root;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import org.springframework.test.context.ContextConfiguration;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ContextConfiguration("classpath:openjpa.xml")
 class OpenJpaNamespaceUserRepositoryTests extends NamespaceUserRepositoryTests {
@@ -49,12 +51,8 @@ class OpenJpaNamespaceUserRepositoryTests extends NamespaceUserRepositoryTests {
 	@Test
 	void checkQueryValidationWithOpenJpa() {
 
-		assertThatThrownBy(() -> em.createQuery("something absurd"))
-		.isInstanceOf(RuntimeException.class);
-
-		assertThatThrownBy(() -> em.createNamedQuery("not available"))
-		.isInstanceOf(RuntimeException.class);
-
+		assertThatThrownBy(() -> em.createQuery("something absurd")).isInstanceOf(RuntimeException.class);
+		assertThatThrownBy(() -> em.createNamedQuery("not available")).isInstanceOf(RuntimeException.class);
 	}
 
 	/**
@@ -78,7 +76,7 @@ class OpenJpaNamespaceUserRepositoryTests extends NamespaceUserRepositoryTests {
 		query.setParameter(parameter, Arrays.asList(1, 2));
 
 		List<User> resultList = query.getResultList();
-		assertThat(resultList.size()).isEqualTo(2);
+		assertThat(resultList).hasSize(2);
 	}
 
 	/**

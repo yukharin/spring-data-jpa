@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
@@ -44,11 +43,12 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * @author Mark Paluch
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = RepositoryWithIdClassKeyTests.TestConfig.class)
 @Transactional
-public class RepositoryWithIdClassKeyTests {
+class RepositoryWithIdClassKeyTests {
 
 	@Autowired private SiteRepository siteRepository;
 
@@ -72,7 +72,7 @@ public class RepositoryWithIdClassKeyTests {
 				.findById(new ItemSiteId(new ItemId(item.getId(), item.getManufacturerId()), site.getId()));
 
 		assertThat(loaded).isNotNull();
-		assertThat(loaded.isPresent()).isTrue();
+		assertThat(loaded).isPresent();
 	}
 
 	@Configuration

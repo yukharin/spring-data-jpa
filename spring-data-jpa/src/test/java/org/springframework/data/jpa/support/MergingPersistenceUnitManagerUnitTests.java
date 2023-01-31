@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
  */
 package org.springframework.data.jpa.support;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import jakarta.persistence.spi.PersistenceUnitInfo;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
-
-import jakarta.persistence.spi.PersistenceUnitInfo;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
 import org.springframework.data.jpa.domain.sample.Role;
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.orm.jpa.persistenceunit.MutablePersistenceUnitInfo;
@@ -40,6 +40,7 @@ import org.springframework.orm.jpa.persistenceunit.MutablePersistenceUnitInfo;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -64,15 +65,15 @@ class MergingPersistenceUnitManagerUnitTests {
 	void mergesManagedClassesCorrectly() {
 
 		MergingPersistenceUnitManager manager = new MergingPersistenceUnitManager();
-		manager.setPersistenceXmlLocations(new String[] { "classpath:org/springframework/data/jpa/support/persistence.xml",
-				"classpath:org/springframework/data/jpa/support/persistence2.xml" });
+		manager.setPersistenceXmlLocations("classpath:org/springframework/data/jpa/support/persistence.xml",
+				"classpath:org/springframework/data/jpa/support/persistence2.xml");
 		manager.preparePersistenceUnitInfos();
 
 		PersistenceUnitInfo info = manager.obtainPersistenceUnitInfo("pu");
-		assertThat(info.getManagedClassNames().size()).isEqualTo(2);
+		assertThat(info.getManagedClassNames()).hasSize(2);
 		assertThat(info.getManagedClassNames()).contains(User.class.getName(), Role.class.getName());
 
-		assertThat(info.getMappingFileNames().size()).isEqualTo(2);
+		assertThat(info.getMappingFileNames()).hasSize(2);
 		assertThat(info.getMappingFileNames()).contains("foo.xml", "bar.xml");
 	}
 
@@ -87,7 +88,7 @@ class MergingPersistenceUnitManagerUnitTests {
 		MergingPersistenceUnitManager manager = new MergingPersistenceUnitManager();
 		manager.postProcessPersistenceUnitInfo(newInfo, oldInfo);
 
-		assertThat(newInfo.getJarFileUrls().size()).isEqualTo(1);
+		assertThat(newInfo.getJarFileUrls()).hasSize(1);
 		assertThat(newInfo.getJarFileUrls()).contains(oldInfo.getPersistenceUnitRootUrl());
 	}
 
@@ -101,7 +102,7 @@ class MergingPersistenceUnitManagerUnitTests {
 		MergingPersistenceUnitManager manager = new MergingPersistenceUnitManager();
 		manager.postProcessPersistenceUnitInfo(newInfo, oldInfo);
 
-		assertThat(newInfo.getJarFileUrls().isEmpty()).isTrue();
+		assertThat(newInfo.getJarFileUrls()).isEmpty();
 	}
 
 	@Test
@@ -116,7 +117,7 @@ class MergingPersistenceUnitManagerUnitTests {
 		MergingPersistenceUnitManager manager = new MergingPersistenceUnitManager();
 		manager.postProcessPersistenceUnitInfo(newInfo, oldInfo);
 
-		assertThat(newInfo.getJarFileUrls().size()).isEqualTo(1);
+		assertThat(newInfo.getJarFileUrls()).hasSize(1);
 		assertThat(newInfo.getJarFileUrls()).contains(oldInfo.getPersistenceUnitRootUrl());
 	}
 }

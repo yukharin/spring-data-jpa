@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.sample.UserRepository;
@@ -30,12 +28,14 @@ import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
 import org.springframework.data.repository.core.support.RepositoryFactoryInformation;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
 /**
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:config/namespace-application-context.xml")
-public class SPR8954Tests {
+class SPR8954Tests {
 
 	@Autowired ApplicationContext context;
 
@@ -46,9 +46,9 @@ public class SPR8954Tests {
 		Map<String, RepositoryFactoryInformation> repoFactories = context
 				.getBeansOfType(RepositoryFactoryInformation.class);
 
-		assertThat(repoFactories.size()).isGreaterThan(0);
+		assertThat(repoFactories).isNotEmpty();
 		assertThat(repoFactories.keySet()).contains("&userRepository");
 		assertThat(repoFactories.get("&userRepository")).isInstanceOf(JpaRepositoryFactoryBean.class);
-		assertThat(Arrays.asList(context.getBeanNamesForType(UserRepository.class))).contains("userRepository");
+		assertThat(context.getBeanNamesForType(UserRepository.class)).contains("userRepository");
 	}
 }

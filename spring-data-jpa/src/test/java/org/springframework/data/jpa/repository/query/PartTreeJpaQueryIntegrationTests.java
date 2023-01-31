@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License
 import org.springframework.aop.framework.Advised;
@@ -17,7 +17,9 @@ import org.springframework.aop.framework.Advised;
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -55,10 +57,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  * @author Mark Paluch
  * @author Michael Cramer
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:infrastructure.xml")
-public class PartTreeJpaQueryIntegrationTests {
+class PartTreeJpaQueryIntegrationTests {
 
 	private static String PROPERTY = "h.target." + getQueryProperty();
 	private static Class<?> HIBERNATE_NATIVE_QUERY = org.hibernate.query.Query.class;
@@ -120,7 +123,7 @@ public class PartTreeJpaQueryIntegrationTests {
 
 		Query query = jpaQuery.createQuery(getAccessor(queryMethod, new Object[] { "Matthews" }));
 
-		assertThat(query.getMaxResults()).isEqualTo(1);
+		assertThat(query.getMaxResults()).isOne();
 	}
 
 	@Test // DATAJPA-920
@@ -135,8 +138,7 @@ public class PartTreeJpaQueryIntegrationTests {
 		assertThat(HibernateUtils.getHibernateQuery(query.unwrap(HIBERNATE_NATIVE_QUERY))).contains(".id from User as");
 	}
 
-	@Test // DATAJPA-1074
-	@Disabled // HHH-15432
+	@Test // DATAJPA-1074, HHH-15432
 	void isEmptyCollection() throws Exception {
 
 		JpaQueryMethod queryMethod = getQueryMethod("findByRolesIsEmpty");
@@ -147,8 +149,7 @@ public class PartTreeJpaQueryIntegrationTests {
 		assertThat(HibernateUtils.getHibernateQuery(query.unwrap(HIBERNATE_NATIVE_QUERY))).endsWith("roles is empty");
 	}
 
-	@Test // DATAJPA-1074
-	@Disabled // HHH-15432
+	@Test // DATAJPA-1074, HHH-15432
 	void isNotEmptyCollection() throws Exception {
 
 		JpaQueryMethod queryMethod = getQueryMethod("findByRolesIsNotEmpty");

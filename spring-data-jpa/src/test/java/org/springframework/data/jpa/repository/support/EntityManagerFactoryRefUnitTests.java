@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.support;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.EntityManagerFactory;
 
@@ -33,6 +33,7 @@ import org.springframework.core.io.ClassPathResource;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 class EntityManagerFactoryRefUnitTests {
 
@@ -45,8 +46,8 @@ class EntityManagerFactoryRefUnitTests {
 		reader.loadBeanDefinitions(new ClassPathResource("multiple-entity-manager-context.xml"));
 
 		BeanDefinition bean = factory.getBeanDefinition("userRepository");
-		Object value = getPropertyValue(bean, "entityManager");
-		assertThat(value instanceof RuntimeBeanNameReference).isTrue();
+		Object value = bean.getPropertyValues().getPropertyValue("entityManager").getValue();
+		assertThat(value).isInstanceOf(RuntimeBeanNameReference.class);
 		BeanDefinition emCreator = (BeanDefinition) value;
 
 		BeanReference reference = getConstructorBeanReference(emCreator, 0);
@@ -54,14 +55,13 @@ class EntityManagerFactoryRefUnitTests {
 	}
 
 	private Object getPropertyValue(BeanDefinition definition, String propertyName) {
-
 		return definition.getPropertyValues().getPropertyValue(propertyName).getValue();
 	}
 
 	private BeanReference getConstructorBeanReference(BeanDefinition definition, int index) {
 
 		Object value = definition.getConstructorArgumentValues().getIndexedArgumentValues().get(index).getValue();
-		assertThat(value instanceof BeanReference).isTrue();
+		assertThat(value).isInstanceOf(BeanReference.class);
 		return (BeanReference) value;
 	}
 }

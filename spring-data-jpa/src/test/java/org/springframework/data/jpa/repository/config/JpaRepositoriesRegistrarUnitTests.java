@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.config;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 
@@ -26,7 +26,6 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.StandardAnnotationMetadata;
 import org.springframework.data.jpa.repository.sample.UserRepository;
 
 /**
@@ -34,6 +33,7 @@ import org.springframework.data.jpa.repository.sample.UserRepository;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Erik Pellizzon
  */
 class JpaRepositoriesRegistrarUnitTests {
 
@@ -43,7 +43,7 @@ class JpaRepositoriesRegistrarUnitTests {
 	@BeforeEach
 	void setUp() {
 
-		metadata = new StandardAnnotationMetadata(Config.class, true);
+		metadata = AnnotationMetadata.introspect(Config.class);
 		registry = new DefaultListableBeanFactory();
 	}
 
@@ -60,8 +60,7 @@ class JpaRepositoriesRegistrarUnitTests {
 	}
 
 	@EnableJpaRepositories(basePackageClasses = UserRepository.class)
-	private
-	class Config {
+	private class Config {
 
 	}
 }

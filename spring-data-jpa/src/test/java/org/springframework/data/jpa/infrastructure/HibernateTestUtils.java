@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.springframework.data.jpa.infrastructure;
 
+import jakarta.persistence.spi.PersistenceProvider;
+
 import java.util.Arrays;
 import java.util.List;
-
-import jakarta.persistence.spi.PersistenceProvider;
 
 import org.springframework.util.ClassUtils;
 
@@ -26,6 +26,7 @@ import org.springframework.util.ClassUtils;
  * Testing utilities for Hibernate.
  *
  * @author Oliver Gierke
+ * @author Erik Pellizzon
  * @soundtrack Ron Spielman - Africa's Napoleon (Swimming In The Dark)
  * @since 1.10.2
  */
@@ -48,7 +49,7 @@ public class HibernateTestUtils {
 			if (ClassUtils.isPresent(provider, classLoader)) {
 
 				try {
-					return (PersistenceProvider) ClassUtils.forName(provider, classLoader).newInstance();
+					return (PersistenceProvider) ClassUtils.forName(provider, classLoader).getDeclaredConstructor().newInstance();
 				} catch (Exception o_O) {
 					throw new RuntimeException(o_O);
 				}

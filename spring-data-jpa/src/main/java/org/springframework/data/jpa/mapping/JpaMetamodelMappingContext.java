@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ public class JpaMetamodelMappingContext
 				} catch (IllegalArgumentException o_O) {
 
 					// Fall back to inspect *all* managed types manually as Metamodel.managedType(…) only
-					// returns for entities, embeddables and managed supperclasses.
+					// returns for entities, embeddables and managed superclasses.
 
 					for (ManagedType<?> managedType : model.getManagedTypes()) {
 						if (type.equals(managedType.getJavaType())) {

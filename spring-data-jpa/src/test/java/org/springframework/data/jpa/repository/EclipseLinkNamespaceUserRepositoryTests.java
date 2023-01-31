@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.Query;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.data.jpa.repository.sample.UserRepository;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -33,6 +32,7 @@ import org.springframework.test.context.ContextConfiguration;
  * @author Jens Schauder
  * @author Moritz Becker
  * @author Andrey Kovalev
+ * @author Krzysztof Krason
  */
 @ContextConfiguration(value = "classpath:eclipselink.xml")
 @Disabled("hsqldb seems to hang on this test class without leaving a surefire report")
@@ -42,8 +42,7 @@ class EclipseLinkNamespaceUserRepositoryTests extends NamespaceUserRepositoryTes
 	 * Ignored until https://bugs.eclipse.org/bugs/show_bug.cgi?id=422450 is resolved.
 	 */
 	@Override
-	void sortByAssociationPropertyShouldUseLeftOuterJoin() {
-	}
+	void sortByAssociationPropertyShouldUseLeftOuterJoin() {}
 
 	/**
 	 * Ignored until https://bugs.eclipse.org/bugs/show_bug.cgi?id=422450 is resolved.
@@ -67,7 +66,7 @@ class EclipseLinkNamespaceUserRepositoryTests extends NamespaceUserRepositoryTes
 		Query query = em.createNativeQuery("select 1 from User where firstname=? and lastname=?");
 		assertThat(query.getParameters()).describedAs(
 				"Due to a bug eclipse has size 0; If this is no longer the case the special code path triggered in NamedOrIndexedQueryParameterSetter.registerExcessParameters can be removed")
-				.hasSize(0);
+				.isEmpty();
 	}
 
 	/**
@@ -112,8 +111,7 @@ class EclipseLinkNamespaceUserRepositoryTests extends NamespaceUserRepositoryTes
 	 * Ignores the test. Reconsider once https://bugs.eclipse.org/bugs/show_bug.cgi?id=533240 is fixed.
 	 */
 	@Override
-	void findByAgeWithEmptyArrayOfIntegersOrFirstName() {
-	}
+	void findByAgeWithEmptyArrayOfIntegersOrFirstName() {}
 
 	/**
 	 * Ignores the test. Reconsider once https://bugs.eclipse.org/bugs/show_bug.cgi?id=533240 is fixed.

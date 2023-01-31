@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.data.domain.Sort.Direction.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.springframework.data.domain.Sort.Direction.ASC;
+import static org.springframework.data.domain.Sort.Direction.DESC;
 
 import jakarta.persistence.EntityManager;
 
@@ -49,12 +51,13 @@ import org.springframework.transaction.annotation.Transactional;
  * Integration test for executing finders, thus testing various query lookup strategies.
  *
  * @author Oliver Gierke
+ * @author Krzysztof Krason
  * @see QueryLookupStrategy
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(locations = "classpath:config/namespace-application-context.xml")
 @Transactional
-public class UserRepositoryFinderTests {
+class UserRepositoryFinderTests {
 
 	@Autowired UserRepository userRepository;
 	@Autowired RoleRepository roleRepository;
@@ -128,7 +131,7 @@ public class UserRepositoryFinderTests {
 
 		Page<User> page = userRepository.findByLastname(PageRequest.of(0, 1), "Matthews");
 
-		assertThat(page.getNumberOfElements()).isEqualTo(1);
+		assertThat(page.getNumberOfElements()).isOne();
 		assertThat(page.getTotalElements()).isEqualTo(2L);
 		assertThat(page.getTotalPages()).isEqualTo(2);
 	}
@@ -145,7 +148,7 @@ public class UserRepositoryFinderTests {
 
 		Page<User> page = userRepository.findByFirstnameIn(PageRequest.of(0, 1), "Dave", "Oliver August");
 
-		assertThat(page.getNumberOfElements()).isEqualTo(1);
+		assertThat(page.getNumberOfElements()).isOne();
 		assertThat(page.getTotalElements()).isEqualTo(2L);
 		assertThat(page.getTotalPages()).isEqualTo(2);
 	}
@@ -214,7 +217,7 @@ public class UserRepositoryFinderTests {
 
 		assertThat(slice).containsExactlyInAnyOrder(dave, oliver);
 		assertThat(slice.getNumberOfElements()).isEqualTo(2);
-		assertThat(slice.hasNext()).isEqualTo(false);
+		assertThat(slice.hasNext()).isFalse();
 	}
 
 	@Test // DATAJPA-830

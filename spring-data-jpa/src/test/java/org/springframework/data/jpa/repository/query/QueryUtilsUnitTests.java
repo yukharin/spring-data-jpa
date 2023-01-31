@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,12 @@ package org.springframework.data.jpa.repository.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.springframework.data.jpa.repository.query.QueryUtils.*;
+import static org.springframework.data.jpa.repository.query.QueryUtils.applySorting;
+import static org.springframework.data.jpa.repository.query.QueryUtils.createCountQueryFor;
+import static org.springframework.data.jpa.repository.query.QueryUtils.detectAlias;
+import static org.springframework.data.jpa.repository.query.QueryUtils.getOuterJoinAliases;
+import static org.springframework.data.jpa.repository.query.QueryUtils.hasConstructorExpression;
+import static org.springframework.data.jpa.repository.query.QueryUtils.removeSubqueries;
 
 import java.util.Collections;
 import java.util.Set;
@@ -30,7 +35,6 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.jpa.domain.JpaSort;
-import org.springframework.util.StringUtils;
 
 /**
  * Unit test for {@link QueryUtils}.
@@ -48,6 +52,7 @@ import org.springframework.util.StringUtils;
  * @author Darin Manica
  * @author Chris Fraser
  * @author Michał Pachucki
+ * @author Erik Pellizzon
  */
 class QueryUtilsUnitTests {
 
@@ -264,7 +269,7 @@ class QueryUtilsUnitTests {
 			return matcher.replaceAll(" ").trim();
 		}
 
-		return StringUtils.trimWhitespace(s);
+		return s.strip();
 	}
 
 	@Test

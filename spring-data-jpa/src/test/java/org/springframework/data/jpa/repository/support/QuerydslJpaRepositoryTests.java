@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package org.springframework.data.jpa.repository.support;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -58,6 +59,7 @@ import com.querydsl.core.types.dsl.PathBuilderFactory;
  * @author Christoph Strobl
  * @author Malte Mauelshagen
  * @author Greg Turnquist
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration({ "classpath:infrastructure.xml" })
@@ -271,9 +273,9 @@ class QuerydslJpaRepositoryTests {
 	@Test // DATAJPA-665
 	void shouldSupportExistsWithPredicate() {
 
-		assertThat(repository.exists(user.firstname.eq("Dave"))).isEqualTo(true);
-		assertThat(repository.exists(user.firstname.eq("Unknown"))).isEqualTo(false);
-		assertThat(repository.exists((Predicate) null)).isEqualTo(true);
+		assertThat(repository.exists(user.firstname.eq("Dave"))).isTrue();
+		assertThat(repository.exists(user.firstname.eq("Unknown"))).isFalse();
+		assertThat(repository.exists((Predicate) null)).isTrue();
 	}
 
 	@Test // DATAJPA-679
@@ -309,7 +311,7 @@ class QuerydslJpaRepositoryTests {
 		assertThat(firstPage.getTotalElements()).isEqualTo(3L);
 
 		Page<User> secondPage = repository.findAll(user.dateOfBirth.isNull(), PageRequest.of(10, 10));
-		assertThat(secondPage.getContent()).hasSize(0);
+		assertThat(secondPage.getContent()).isEmpty();
 		assertThat(secondPage.getTotalElements()).isEqualTo(3L);
 	}
 

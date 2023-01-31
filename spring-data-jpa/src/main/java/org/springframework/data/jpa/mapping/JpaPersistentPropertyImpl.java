@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.springframework.data.jpa.mapping;
 
+import jakarta.persistence.*;
+import jakarta.persistence.metamodel.Metamodel;
+
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import jakarta.persistence.*;
-import jakarta.persistence.metamodel.Metamodel;
 
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.annotation.AccessType.Type;
@@ -32,7 +32,6 @@ import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
 import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
-import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.data.util.Lazy;
 import org.springframework.data.util.TypeInformation;
 import org.springframework.lang.Nullable;
@@ -46,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Greg Turnquist
  * @author Christoph Strobl
  * @author Mark Paluch
+ * @author Erik Pellizzon
  * @since 1.3
  */
 class JpaPersistentPropertyImpl extends AnnotationBasedPersistentProperty<JpaPersistentProperty>
@@ -254,7 +254,7 @@ class JpaPersistentPropertyImpl extends AnnotationBasedPersistentProperty<JpaPer
 				continue;
 			}
 
-			return ClassTypeInformation.from((Class<?>) entityValue);
+			return TypeInformation.of((Class<?>) entityValue);
 		}
 
 		return null;

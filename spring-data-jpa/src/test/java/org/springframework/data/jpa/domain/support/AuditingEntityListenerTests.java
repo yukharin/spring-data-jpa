@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,13 @@
  */
 package org.springframework.data.jpa.domain.support;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Auditable;
 import org.springframework.data.jpa.domain.sample.AnnotatedAuditableUser;
@@ -42,12 +40,13 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:auditing/auditing-entity-listener.xml")
 @Transactional
 @DirtiesContext
-public class AuditingEntityListenerTests {
+class AuditingEntityListenerTests {
 
 	@Autowired AuditableUserRepository repository;
 	@Autowired AnnotatedAuditableUserRepository annotatedUserRepository;
@@ -58,14 +57,14 @@ public class AuditingEntityListenerTests {
 
 	private static void assertDatesSet(Auditable<?, ?, LocalDateTime> auditable) {
 
-		assertThat(auditable.getCreatedDate().isPresent()).isTrue();
-		assertThat(auditable.getLastModifiedDate().isPresent()).isTrue();
+		assertThat(auditable.getCreatedDate()).isPresent();
+		assertThat(auditable.getLastModifiedDate()).isPresent();
 	}
 
 	private static void assertUserIsAuditor(AuditableUser user, Auditable<AuditableUser, ?, LocalDateTime> auditable) {
 
-		assertThat(auditable.getCreatedBy()).isEqualTo(Optional.of(user));
-		assertThat(auditable.getLastModifiedBy()).isEqualTo(Optional.of(user));
+		assertThat(auditable.getCreatedBy()).contains(user);
+		assertThat(auditable.getLastModifiedBy()).contains(user);
 	}
 
 	@BeforeEach

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.util.List;
-import java.util.Set;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -26,10 +23,12 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
+import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,11 +43,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @Transactional
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:config/namespace-application-context.xml")
-public class ParentRepositoryIntegrationTests {
+class ParentRepositoryIntegrationTests {
 
 	@Autowired ParentRepository repository;
 
@@ -76,15 +76,16 @@ public class ParentRepositoryIntegrationTests {
 
 		List<Parent> content = page.getContent();
 
-		assertThat(content.size()).isEqualTo(3);
+		assertThat(content).hasSize(3);
 		assertThat(page.getSize()).isEqualTo(5);
-		assertThat(page.getNumber()).isEqualTo(0);
+		assertThat(page.getNumber()).isZero();
 		assertThat(page.getTotalElements()).isEqualTo(3L);
-		assertThat(page.getTotalPages()).isEqualTo(1);
+		assertThat(page.getTotalPages()).isOne();
 	}
 
 	@Test // DATAJPA-287
 	void testWithJoin() {
+
 		Page<Parent> page = repository.findAll(new Specification<Parent>() {
 			@Override
 			public Predicate toPredicate(Root<Parent> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
@@ -99,13 +100,13 @@ public class ParentRepositoryIntegrationTests {
 
 		// according to the initial setup there should be
 		// 3 parents which children collection is not empty
-		assertThat(content.size()).isEqualTo(3);
+		assertThat(content).hasSize(3);
 		assertThat(page.getSize()).isEqualTo(5);
-		assertThat(page.getNumber()).isEqualTo(0);
+		assertThat(page.getNumber()).isZero();
 
 		// we get here wrong total elements number since
 		// count query doesn't take into account the distinct marker of query
 		assertThat(page.getTotalElements()).isEqualTo(3L);
-		assertThat(page.getTotalPages()).isEqualTo(1);
+		assertThat(page.getTotalPages()).isOne();
 	}
 }

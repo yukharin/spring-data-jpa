@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.springframework.data.jpa.provider;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
@@ -45,10 +44,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration
-public class PersistenceProviderIntegrationTests {
+public abstract class PersistenceProviderIntegrationTests {
 
 	@Autowired CategoryRepository categories;
 	@Autowired ProductRepository products;
@@ -59,6 +59,7 @@ public class PersistenceProviderIntegrationTests {
 
 	@BeforeEach
 	void setUp() {
+
 		this.product = products.save(new Product());
 		this.category = categories.save(new Category(product));
 	}
@@ -75,7 +76,7 @@ public class PersistenceProviderIntegrationTests {
 				ProxyIdAccessor accessor = PersistenceProvider.fromEntityManager(em);
 
 				assertThat(accessor.shouldUseAccessorFor(product)).isTrue();
-				assertThat(accessor.getIdentifierFrom(product).toString()).isEqualTo((Object) product.getId().toString());
+				assertThat(accessor.getIdentifierFrom(product)).hasToString(product.getId().toString());
 
 				return null;
 			}

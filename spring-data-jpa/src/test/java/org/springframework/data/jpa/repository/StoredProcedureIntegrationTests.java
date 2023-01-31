@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assume.*;
-import static org.springframework.data.jpa.support.EntityManagerTestUtils.*;
-
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.springframework.data.jpa.support.EntityManagerTestUtils.currentEntityManagerIsAJpa21EntityManager;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -47,12 +47,13 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Oliver Gierke
  * @author Jens Schauder
  * @author Gabriel Basilio
+ * @author Krzysztof Krason
  * @see scripts/schema-stored-procedures.sql for procedure definitions.
  */
 @Transactional
 @ContextConfiguration(classes = StoredProcedureIntegrationTests.TestConfig.class)
 @ExtendWith(SpringExtension.class)
-public class StoredProcedureIntegrationTests {
+class StoredProcedureIntegrationTests {
 
 	private static final String NOT_SUPPORTED = "Stored procedures with REF_CURSOR are currently not supported by HSQL dialect";
 
@@ -61,7 +62,7 @@ public class StoredProcedureIntegrationTests {
 
 	@BeforeEach
 	void setup() {
-		assumeTrue(currentEntityManagerIsAJpa21EntityManager(em));
+		assumeThat(currentEntityManagerIsAJpa21EntityManager(em)).isTrue();
 	}
 
 	@Test // DATAJPA-652
@@ -86,7 +87,7 @@ public class StoredProcedureIntegrationTests {
 		List<Dummy> dummies = repository.adHocProcedureWith1InputAnd1OutputParameterWithResultSet("FOO");
 
 		assertThat(dummies).isNotNull();
-		assertThat(dummies.size()).isEqualTo(3);
+		assertThat(dummies).hasSize(3);
 	}
 
 	@Test // DATAJPA-652
@@ -96,7 +97,7 @@ public class StoredProcedureIntegrationTests {
 		List<Dummy> dummies = repository.adHocProcedureWith1InputAnd1OutputParameterWithResultSetWithUpdate("FOO");
 
 		assertThat(dummies).isNotNull();
-		assertThat(dummies.size()).isEqualTo(3);
+		assertThat(dummies).hasSize(3);
 	}
 
 	@Test // DATAJPA-652
@@ -126,7 +127,7 @@ public class StoredProcedureIntegrationTests {
 		List<Dummy> dummies = repository.procedureWith1InputAnd1OutputParameterWithResultSet("FOO");
 
 		assertThat(dummies).isNotNull();
-		assertThat(dummies.size()).isEqualTo(3);
+		assertThat(dummies).hasSize(3);
 	}
 
 	@Test // DATAJPA-652
@@ -136,7 +137,7 @@ public class StoredProcedureIntegrationTests {
 		List<Dummy> dummies = repository.procedureWith1InputAnd1OutputParameterWithResultSetWithUpdate("FOO");
 
 		assertThat(dummies).isNotNull();
-		assertThat(dummies.size()).isEqualTo(3);
+		assertThat(dummies).hasSize(3);
 	}
 
 	@Test // DATAJPA-652

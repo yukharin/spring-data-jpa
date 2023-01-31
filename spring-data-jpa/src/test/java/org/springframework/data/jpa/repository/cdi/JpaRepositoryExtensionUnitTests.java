@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  */
 package org.springframework.data.jpa.repository.cdi;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.ProcessBean;
+import jakarta.persistence.EntityManager;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.enterprise.inject.spi.Bean;
-import jakarta.enterprise.inject.spi.ProcessBean;
-import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 class JpaRepositoryExtensionUnitTests {
 
@@ -48,7 +50,7 @@ class JpaRepositoryExtensionUnitTests {
 
 		Map<Set<Annotation>, Bean<EntityManager>> entityManagers = (Map<Set<Annotation>, Bean<EntityManager>>) ReflectionTestUtils
 				.getField(extension, "entityManagers");
-		assertThat(entityManagers.size()).isEqualTo(1);
+		assertThat(entityManagers).hasSize(1);
 		assertThat(entityManagers.values()).contains(em);
 	}
 

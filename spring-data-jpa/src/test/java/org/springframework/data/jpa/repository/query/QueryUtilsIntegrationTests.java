@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,11 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static java.util.Collections.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
@@ -42,6 +38,12 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceProviderResolver;
 import jakarta.persistence.spi.PersistenceProviderResolverHolder;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,10 +68,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  * @author Jens Schauder
  * @author Patrice Blanchardie
  * @author Diego Krupitza
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:infrastructure.xml")
-public class QueryUtilsIntegrationTests {
+class QueryUtilsIntegrationTests {
 
 	@PersistenceContext EntityManager em;
 
@@ -222,7 +225,7 @@ public class QueryUtilsIntegrationTests {
 
 		QueryUtils.toExpressionRecursively(root, PropertyPath.from("manager", User.class));
 
-		assertThat(getNonInnerJoins(root)).hasSize(0);
+		assertThat(getNonInnerJoins(root)).isEmpty();
 	}
 
 	@Test // DATAJPA-401

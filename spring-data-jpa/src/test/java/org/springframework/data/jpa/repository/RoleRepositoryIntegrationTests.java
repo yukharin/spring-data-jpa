@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,10 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
-
-import java.util.Optional;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.sample.Role;
 import org.springframework.data.jpa.repository.sample.RoleRepository;
@@ -36,11 +33,12 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Oliver Gierke
  * @author Thomas Darimont
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(locations = { "classpath:application-context.xml" })
 @Transactional
-public class RoleRepositoryIntegrationTests {
+class RoleRepositoryIntegrationTests {
 
 	@Autowired RoleRepository repository;
 
@@ -63,7 +61,7 @@ public class RoleRepositoryIntegrationTests {
 		ReflectionTestUtils.setField(reference, "name", "USER");
 		repository.save(reference);
 
-		assertThat(repository.findById(result.getId())).isEqualTo(Optional.of(reference));
+		assertThat(repository.findById(result.getId())).contains(reference);
 	}
 
 	@Test // DATAJPA-509
@@ -72,7 +70,7 @@ public class RoleRepositoryIntegrationTests {
 		Role reference = new Role("ADMIN");
 		repository.save(reference);
 
-		assertThat(repository.count()).isEqualTo(1L);
+		assertThat(repository.count()).isOne();
 	}
 
 	@Test // DATAJPA-509
@@ -90,6 +88,6 @@ public class RoleRepositoryIntegrationTests {
 		Role reference = new Role("ADMIN");
 		reference = repository.save(reference);
 
-		assertThat(repository.countByName(reference.getName())).isEqualTo(1L);
+		assertThat(repository.countByName(reference.getName())).isOne();
 	}
 }

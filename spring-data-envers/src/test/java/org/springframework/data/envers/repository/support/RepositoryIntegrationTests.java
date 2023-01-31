@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package org.springframework.data.envers.repository.support;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.data.history.RevisionMetadata.RevisionType.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.data.history.RevisionMetadata.RevisionType.DELETE;
+import static org.springframework.data.history.RevisionMetadata.RevisionType.INSERT;
+import static org.springframework.data.history.RevisionMetadata.RevisionType.UPDATE;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,7 +29,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,15 +48,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = Config.class)
 class RepositoryIntegrationTests {
 
-	@Autowired
-	LicenseRepository licenseRepository;
-	@Autowired
-	CountryRepository countryRepository;
+	@Autowired LicenseRepository licenseRepository;
+	@Autowired CountryRepository countryRepository;
 
 	@BeforeEach
 	void setUp() {
@@ -192,7 +192,6 @@ class RepositoryIntegrationTests {
 
 		assertThat(revisions).hasSize(2);
 		assertThat(revisions.getLatestRevision().getEntity()) //
-				.isNotNull() //
 				.extracting(c -> c.name, c -> c.code) //
 				.containsExactly(null, null);
 	}

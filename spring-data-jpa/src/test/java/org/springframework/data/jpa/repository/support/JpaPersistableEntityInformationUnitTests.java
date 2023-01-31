@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package org.springframework.data.jpa.repository.support;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -24,6 +24,7 @@ import jakarta.persistence.PersistenceUnitUtil;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
 import jakarta.persistence.metamodel.Type;
+import lombok.Getter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import org.springframework.data.repository.core.EntityInformation;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -79,23 +81,16 @@ class JpaPersistableEntityInformationUnitTests {
 
 		foo.id = 1L;
 		assertThat(entityInformation.isNew(foo)).isTrue();
-		assertThat(entityInformation.getId(foo)).isEqualTo(1L);
+		assertThat(entityInformation.getId(foo)).isOne();
 	}
 
 	@SuppressWarnings("serial")
 	class Foo implements Persistable<Long> {
 
-		Long id;
-
-		@Override
-		public Long getId() {
-
-			return id;
-		}
+		@Getter Long id;
 
 		@Override
 		public boolean isNew() {
-
 			return id != null;
 		}
 	}

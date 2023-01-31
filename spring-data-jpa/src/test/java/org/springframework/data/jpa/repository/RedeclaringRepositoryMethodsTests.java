@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,11 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * @author Thomas Darimont
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = SampleConfig.class)
 @Transactional
-public class RedeclaringRepositoryMethodsTests {
+class RedeclaringRepositoryMethodsTests {
 
 	@Autowired RedeclaringRepositoryMethodsRepository repository;
 
@@ -62,7 +62,7 @@ public class RedeclaringRepositoryMethodsTests {
 
 		Page<User> page = repository.findAll(PageRequest.of(0, 2));
 
-		assertThat(page.getNumberOfElements()).isEqualTo(1);
+		assertThat(page.getNumberOfElements()).isOne();
 		assertThat(page.getContent().get(0).getFirstname()).isEqualTo("Oliver");
 	}
 
@@ -74,6 +74,6 @@ public class RedeclaringRepositoryMethodsTests {
 
 		List<User> result = repository.findAll();
 
-		assertThat(result.isEmpty()).isTrue();
+		assertThat(result).isEmpty();
 	}
 }

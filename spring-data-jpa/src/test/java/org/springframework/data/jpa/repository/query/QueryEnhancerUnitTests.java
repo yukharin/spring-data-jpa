@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.springframework.data.jpa.domain.JpaSort;
  *
  * @author Diego Krupitza
  * @author Geoffrey Deremetz
+ * @author Krzysztof Krason
  */
 class QueryEnhancerUnitTests {
 
@@ -44,36 +45,7 @@ class QueryEnhancerUnitTests {
 	private static final String FQ_QUERY = "select u from org.acme.domain.User$Foo_Bar u";
 	private static final String SIMPLE_QUERY = "from User u";
 	private static final String COUNT_QUERY = "select count(u) from User u";
-
 	private static final String QUERY_WITH_AS = "select u from User as u where u.username = ?";
-
-	@Test
-	void createsCountQueryCorrectly() {
-		assertCountQuery(QUERY, COUNT_QUERY, true);
-	}
-
-	@Test
-	void createsCountQueriesCorrectlyForCapitalLetterJPQL() {
-
-		assertCountQuery("FROM User u WHERE u.foo.bar = ?", "select count(u) FROM User u WHERE u.foo.bar = ?", false);
-
-		assertCountQuery("SELECT u FROM User u where u.foo.bar = ?", "select count(u) FROM User u where u.foo.bar = ?",
-				true);
-	}
-
-	@Test
-	void createsCountQueryForDistinctQueries() {
-
-		assertCountQuery("select distinct u from User u where u.foo = ?",
-				"select count(distinct u) from User u where u.foo = ?", true);
-	}
-
-	@Test
-	void createsCountQueryForConstructorQueries() {
-
-		assertCountQuery("select distinct new User(u.name) from User u where u.foo = ?",
-				"select count(distinct u) from User u where u.foo = ?", false);
-	}
 
 	@Test
 	void createsCountQueryForJoinsNoneNative() {
@@ -97,14 +69,7 @@ class QueryEnhancerUnitTests {
 	}
 
 	@Test
-	void createsCountQueryForAliasesCorrectly() {
-
-		assertCountQuery("select u from User as u", "select count(u) from User as u", true);
-	}
-
-	@Test
 	void allowsShortJpaSyntax() {
-
 		assertCountQuery(SIMPLE_QUERY, COUNT_QUERY, false);
 	}
 
@@ -142,9 +107,10 @@ class QueryEnhancerUnitTests {
 
 		StringQuery query = new StringQuery("select p from Person p left join p.address address", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(Sort.by("address.city")), "order by address.city asc");
-		endsIgnoringCase(getEnhancer(query).applySorting(Sort.by("address.city", "lastname"), "p"),
-				"order by address.city asc, p.lastname asc");
+		assertThat(getEnhancer(query).applySorting(Sort.by("address.city")))
+				.endsWithIgnoringCase("order by address.city asc");
+		assertThat(getEnhancer(query).applySorting(Sort.by("address.city", "lastname"), "p"))
+				.endsWithIgnoringCase("order by address.city asc, p.lastname asc");
 	}
 
 	@Test // DATAJPA-252
@@ -152,8 +118,8 @@ class QueryEnhancerUnitTests {
 
 		StringQuery query = new StringQuery("select p from Person p order by p.lastname asc", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(Sort.by("firstname"), "p"),
-				"order by p.lastname asc, p.firstname asc");
+		assertThat(getEnhancer(query).applySorting(Sort.by("firstname"), "p"))
+				.endsWithIgnoringCase("order by p.lastname asc, p.firstname asc");
 	}
 
 	@Test // DATAJPA-296
@@ -163,7 +129,7 @@ class QueryEnhancerUnitTests {
 
 		StringQuery query = new StringQuery("select p from Person p", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "p"), "order by lower(p.firstname) asc");
+		assertThat(getEnhancer(query).applySorting(sort, "p")).endsWithIgnoringCase("order by lower(p.firstname) asc");
 	}
 
 	@Test // DATAJPA-296
@@ -173,14 +139,8 @@ class QueryEnhancerUnitTests {
 
 		StringQuery query = new StringQuery("select p from Person p order by p.lastname asc", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "p"), "order by p.lastname asc, lower(p.firstname) asc");
-	}
-
-	@Test // DATAJPA-342
-	void usesReturnedVariableInCountProjectionIfSet() {
-
-		assertCountQuery("select distinct m.genre from Media m where m.user = ?1 order by m.genre asc",
-				"select count(distinct m.genre) from Media m where m.user = ?1", true);
+		assertThat(getEnhancer(query).applySorting(sort, "p"))
+				.endsWithIgnoringCase("order by p.lastname asc, lower(p.firstname) asc");
 	}
 
 	@Test // DATAJPA-343
@@ -202,13 +162,6 @@ class QueryEnhancerUnitTests {
 				.isInstanceOf(InvalidDataAccessApiUsageException.class);
 	}
 
-	@Test // DATAJPA-377
-	void removesOrderByInGeneratedCountQueryFromOriginalQueryIfPresent() {
-
-		assertCountQuery("select distinct m.genre from Media m where m.user = ?1 OrDer  By   m.genre ASC",
-				"select count(distinct m.genre) from Media m where m.user = ?1", true);
-	}
-
 	@Test // DATAJPA-375
 	void findsExistingOrderByIndependentOfCase() {
 
@@ -216,17 +169,7 @@ class QueryEnhancerUnitTests {
 		StringQuery originalQuery = new StringQuery("select p from Person p ORDER BY p.firstname", true);
 		String query = getEnhancer(originalQuery).applySorting(sort, "p");
 
-		endsIgnoringCase(query, "ORDER BY p.firstname, p.lastname asc");
-	}
-
-	@Test // DATAJPA-409
-	void createsCountQueryForNestedReferenceCorrectly() {
-		assertCountQuery("select a.b from A a", "select count(a.b) from A a", true);
-	}
-
-	@Test // DATAJPA-420
-	void createsCountQueryForScalarSelects() {
-		assertCountQuery("select p.lastname,p.firstname from Person p", "select count(p) from Person p", true);
+		assertThat(query).endsWithIgnoringCase("ORDER BY p.firstname, p.lastname asc");
 	}
 
 	@Test // DATAJPA-456
@@ -244,7 +187,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("select p from Customer c join c.productOrder p where p.delay = true", true);
 		Sort sort = Sort.by("p.lineItems");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "c"), "order by p.lineItems asc");
+		assertThat(getEnhancer(query).applySorting(sort, "c")).endsWithIgnoringCase("order by p.lineItems asc");
 	}
 
 	@Test // DATAJPA-736
@@ -278,7 +221,8 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("Select * from Cat c join Dog d", true);
 		Sort sort = Sort.by("dPropertyStartingWithJoinAlias");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "c"), "order by c.dPropertyStartingWithJoinAlias asc");
+		assertThat(getEnhancer(query).applySorting(sort, "c"))
+				.endsWithIgnoringCase("order by c.dPropertyStartingWithJoinAlias asc");
 	}
 
 	@Test // DATAJPA-938
@@ -323,7 +267,7 @@ class QueryEnhancerUnitTests {
 
 		StringQuery query = new StringQuery("Select * from mytable where ?1 is null", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(Sort.by("firstname")), "order by firstname asc");
+		assertThat(getEnhancer(query).applySorting(Sort.by("firstname"))).endsWithIgnoringCase("order by firstname asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -343,7 +287,7 @@ class QueryEnhancerUnitTests {
 		JpaSort sort = JpaSort.unsafe("sum(foo)");
 		StringQuery query = new StringQuery("select p from Person p", true);
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "p"), "order by sum(foo) asc");
+		assertThat(getEnhancer(query).applySorting(sort, "p")).endsWithIgnoringCase("order by sum(foo) asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -353,7 +297,7 @@ class QueryEnhancerUnitTests {
 				true);
 		Sort sort = Sort.by("avgPrice", "sumStocks");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by avgPrice asc, sumStocks asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by avgPrice asc, sumStocks asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -362,7 +306,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT AVG(m.price) AS avgPrice FROM Magazine m", true);
 		Sort sort = Sort.by("avgPrice");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by avgPrice asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by avgPrice asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -371,7 +315,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT AVG(m.price) AS avgPrice FROM Magazine m", true);
 		Sort sort = Sort.by("someOtherProperty");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by m.someOtherProperty asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by m.someOtherProperty asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -380,7 +324,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT m.name, AVG(m.price) AS avgPrice FROM Magazine m", true);
 		Sort sort = Sort.by("name", "avgPrice");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by m.name asc, avgPrice asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by m.name asc, avgPrice asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -389,7 +333,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT SUBSTRING(m.name, 2, 5) AS trimmedName FROM Magazine m", true);
 		Sort sort = Sort.by("trimmedName");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by trimmedName asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by trimmedName asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -398,7 +342,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT CONCAT(m.name, 'foo') AS extendedName FROM Magazine m", true);
 		Sort sort = Sort.by("extendedName");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by extendedName asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by extendedName asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -407,7 +351,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT AVG(m.price) AS avg_price FROM Magazine m", true);
 		Sort sort = Sort.by("avg_price");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by avg_price asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by avg_price asc");
 	}
 
 	@Test // DATAJPA-965, DATAJPA-970
@@ -433,7 +377,7 @@ class QueryEnhancerUnitTests {
 		StringQuery query = new StringQuery("SELECT  AVG(  m.price  )   AS   avgPrice   FROM Magazine   m", true);
 		Sort sort = Sort.by("avgPrice");
 
-		endsIgnoringCase(getEnhancer(query).applySorting(sort, "m"), "order by avgPrice asc");
+		assertThat(getEnhancer(query).applySorting(sort, "m")).endsWithIgnoringCase("order by avgPrice asc");
 	}
 
 	@Test // DATAJPA-1000
@@ -451,7 +395,8 @@ class QueryEnhancerUnitTests {
 
 	@Test // DATAJPA-1171
 	void doesNotContainStaticClauseInExistsQuery() {
-		endsIgnoringCase(QueryUtils.getExistsQueryString("entity", "x", Collections.singleton("id")), "WHERE x.id = :id");
+		assertThat(QueryUtils.getExistsQueryString("entity", "x", Collections.singleton("id")))
+				.endsWithIgnoringCase("WHERE x.id = :id");
 	}
 
 	@Test // DATAJPA-1363
@@ -477,30 +422,6 @@ class QueryEnhancerUnitTests {
 		assertThat(getEnhancer(queryWithOrderAlias).detectAlias()).isEqualTo("u");
 	}
 
-	@Test // DATAJPA-1500
-	void createCountQuerySupportsWhitespaceCharacters() {
-
-		StringQuery query = new StringQuery("select * from User user\n" + //
-				"  where user.age = 18\n" + //
-				"  order by user.name\n ", true);
-
-		assertThat(getEnhancer(query).createCountQueryFor())
-				.isEqualToIgnoringCase("select count(user) from User user where user.age = 18");
-	}
-
-	@Test
-	void createCountQuerySupportsLineBreaksInSelectClause() {
-
-		StringQuery query = new StringQuery("select user.age,\n" + //
-				"  user.name\n" + //
-				"  from User user\n" + //
-				"  where user.age = 18\n" + //
-				"  order\nby\nuser.name\n ", true);
-
-		assertThat(getEnhancer(query).createCountQueryFor())
-				.isEqualToIgnoringCase("select count(user) from User user where user.age = 18");
-	}
-
 	@Test // DATAJPA-1061
 	void appliesSortCorrectlyForFieldAliases() {
 
@@ -511,7 +432,7 @@ class QueryEnhancerUnitTests {
 
 		String fullQuery = getEnhancer(query).applySorting(sort);
 
-		endsIgnoringCase(fullQuery, "order by authorName asc");
+		assertThat(fullQuery).endsWithIgnoringCase("order by authorName asc");
 	}
 
 	@Test // GH-2280
@@ -537,7 +458,7 @@ class QueryEnhancerUnitTests {
 
 		String fullQuery = getEnhancer(query).applySorting(sort);
 
-		endsIgnoringCase(fullQuery, "order by title asc");
+		assertThat(fullQuery).endsWithIgnoringCase("order by title asc");
 	}
 
 	@Test // DATAJPA-1061
@@ -550,7 +471,7 @@ class QueryEnhancerUnitTests {
 
 		String fullQuery = getEnhancer(query).applySorting(sort);
 
-		endsIgnoringCase(fullQuery, "order by m.price asc");
+		assertThat(fullQuery).endsWithIgnoringCase("order by m.price asc");
 	}
 
 	@Test
@@ -622,51 +543,6 @@ class QueryEnhancerUnitTests {
 		assertThat(getEnhancer(query).getProjection()).isEqualTo("*");
 	}
 
-	@Test // DATAJPA-1696
-	void findProjectionClauseWithIncludedFrom() {
-
-		StringQuery query = new StringQuery("select x, frommage, y from t", true);
-
-		assertThat(getEnhancer(query).getProjection()).isEqualTo("x, frommage, y");
-	}
-
-	@Test
-	void countProjectionDistinctQueryIncludesNewLineAfterFromAndBeforeJoin() {
-
-		StringQuery originalQuery = new StringQuery(
-				"SELECT DISTINCT entity1\nFROM Entity1 entity1\nLEFT JOIN Entity2 entity2 ON entity1.key = entity2.key", true);
-
-		assertCountQuery(originalQuery,
-				"select count(DISTINCT entity1) FROM Entity1 entity1 LEFT JOIN Entity2 entity2 ON entity1.key = entity2.key");
-	}
-
-	@Test
-	void countProjectionDistinctQueryIncludesNewLineAfterEntity() {
-
-		StringQuery originalQuery = new StringQuery(
-				"SELECT DISTINCT entity1\nFROM Entity1 entity1 LEFT JOIN Entity2 entity2 ON entity1.key = entity2.key", true);
-
-		assertCountQuery(originalQuery,
-				"select count(DISTINCT entity1) FROM Entity1 entity1 LEFT JOIN Entity2 entity2 ON entity1.key = entity2.key");
-	}
-
-	@Test
-	void countProjectionDistinctQueryIncludesNewLineAfterEntityAndBeforeWhere() {
-
-		StringQuery originalQuery = new StringQuery(
-				"SELECT DISTINCT entity1\nFROM Entity1 entity1 LEFT JOIN Entity2 entity2 ON entity1.key = entity2.key\nwhere entity1.id = 1799",
-				true);
-
-		assertCountQuery(originalQuery,
-				"select count(DISTINCT entity1) FROM Entity1 entity1 LEFT JOIN Entity2 entity2 ON entity1.key = entity2.key where entity1.id = 1799");
-	}
-
-	@Test
-	void createsCountQueriesCorrectlyForCapitalLetter() {
-		assertCountQuery("SELECT u FROM User u where u.foo.bar = ?", "select count(u) FROM User u where u.foo.bar = ?",
-				true);
-	}
-
 	@ParameterizedTest // DATAJPA-252
 	@MethodSource("detectsJoinAliasesCorrectlySource")
 	void detectsJoinAliasesCorrectly(String queryString, List<String> aliases) {
@@ -678,10 +554,8 @@ class QueryEnhancerUnitTests {
 		Set<String> nonNativeJoinAliases = getEnhancer(nonNativeQuery).getJoinAliases();
 
 		assertThat(nonNativeJoinAliases).containsAll(nativeJoinAliases);
-		assertThat(nativeJoinAliases) //
-				.hasSize(aliases.size()) //
+		assertThat(nativeJoinAliases).hasSameSizeAs(aliases) //
 				.containsAll(aliases);
-
 	}
 
 	@Test // GH-2441
@@ -712,26 +586,6 @@ class QueryEnhancerUnitTests {
 		assertThat(result).containsIgnoringCase("order by dd.institutesIds");
 	}
 
-	@Test // GH-2511
-	void countQueryUsesCorrectVariable() {
-
-		StringQuery nativeQuery = new StringQuery("SELECT * FROM User WHERE created_at > $1", true);
-
-		QueryEnhancer queryEnhancer = getEnhancer(nativeQuery);
-		String countQueryFor = queryEnhancer.createCountQueryFor();
-		assertThat(countQueryFor).isEqualTo("SELECT count(*) FROM User WHERE created_at > $1");
-
-		nativeQuery = new StringQuery("SELECT * FROM (select * from test) ", true);
-		queryEnhancer = getEnhancer(nativeQuery);
-		countQueryFor = queryEnhancer.createCountQueryFor();
-		assertThat(countQueryFor).isEqualTo("SELECT count(*) FROM (SELECT * FROM test)");
-
-		nativeQuery = new StringQuery("SELECT * FROM (select * from test) as test", true);
-		queryEnhancer = getEnhancer(nativeQuery);
-		countQueryFor = queryEnhancer.createCountQueryFor();
-		assertThat(countQueryFor).isEqualTo("SELECT count(test) FROM (SELECT * FROM test) AS test");
-	}
-
 	@Test // GH-2555
 	void modifyingQueriesAreDetectedCorrectly() {
 
@@ -752,143 +606,6 @@ class QueryEnhancerUnitTests {
 		assertThat(QueryEnhancerFactory.forQuery(modiQuery).createCountQueryFor()).isEqualToIgnoringCase(modifyingQuery);
 	}
 
-	@Test // GH-2578
-	void setOperationListWorksWithJSQLParser() {
-
-		String setQuery = "select SOME_COLUMN from SOME_TABLE where REPORTING_DATE = :REPORTING_DATE  \n" //
-				+ "except \n" //
-				+ "select SOME_COLUMN from SOME_OTHER_TABLE where REPORTING_DATE = :REPORTING_DATE";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isNullOrEmpty();
-		assertThat(stringQuery.getProjection()).isEqualToIgnoringCase("SOME_COLUMN");
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(setQuery);
-		assertThat(queryEnhancer.applySorting(Sort.by("SOME_COLUMN"))).endsWith("ORDER BY SOME_COLUMN ASC");
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isNullOrEmpty();
-		assertThat(queryEnhancer.getProjection()).isEqualToIgnoringCase("SOME_COLUMN");
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
-
-	@Test // GH-2578
-	void complexSetOperationListWorksWithJSQLParser() {
-
-		String setQuery = "select SOME_COLUMN from SOME_TABLE where REPORTING_DATE = :REPORTING_DATE  \n" //
-				+ "except \n" //
-				+ "select SOME_COLUMN from SOME_OTHER_TABLE where REPORTING_DATE = :REPORTING_DATE \n" //
-				+ "union select SOME_COLUMN from SOME_OTHER_OTHER_TABLE";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isNullOrEmpty();
-		assertThat(stringQuery.getProjection()).isEqualToIgnoringCase("SOME_COLUMN");
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(setQuery);
-		assertThat(queryEnhancer.applySorting(Sort.by("SOME_COLUMN").ascending())).endsWith("ORDER BY SOME_COLUMN ASC");
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isNullOrEmpty();
-		assertThat(queryEnhancer.getProjection()).isEqualToIgnoringCase("SOME_COLUMN");
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
-
-	@Test // GH-2578
-	void deeplyNestedcomplexSetOperationListWorksWithJSQLParser() {
-
-		String setQuery = "SELECT CustomerID FROM (\n" //
-				+ "\t\t\tselect * from Customers\n" //
-				+ "\t\t\texcept\n"//
-				+ "\t\t\tselect * from Customers where country = 'Austria'\n"//
-				+ "\t)\n" //
-				+ "\texcept\n"//
-				+ "\tselect CustomerID  from customers where country = 'Germany'\n"//
-				+ "\t;";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isNullOrEmpty();
-		assertThat(stringQuery.getProjection()).isEqualToIgnoringCase("CustomerID");
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(setQuery);
-		assertThat(queryEnhancer.applySorting(Sort.by("CustomerID").descending())).endsWith("ORDER BY CustomerID DESC");
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isNullOrEmpty();
-		assertThat(queryEnhancer.getProjection()).isEqualToIgnoringCase("CustomerID");
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
-
-	@Test // GH-2578
-	void valuesStatementsWorksWithJSQLParser() {
-
-		String setQuery = "VALUES (1, 2, 'test')";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isNullOrEmpty();
-		assertThat(stringQuery.getProjection()).isNullOrEmpty();
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(setQuery);
-		assertThat(queryEnhancer.applySorting(Sort.by("CustomerID").descending())).isEqualTo(setQuery);
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isNullOrEmpty();
-		assertThat(queryEnhancer.getProjection()).isNullOrEmpty();
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
-
-	@Test // GH-2578
-	void withStatementsWorksWithJSQLParser() {
-
-		String setQuery = "with sample_data(day, value) as (values ((0, 13), (1, 12), (2, 15), (3, 4), (4, 8), (5, 16))) \n"
-				+ "select day, value from sample_data as a";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isEqualToIgnoringCase("a");
-		assertThat(stringQuery.getProjection()).isEqualToIgnoringCase("day, value");
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(
-				"with sample_data (day, value) AS (VALUES ((0, 13), (1, 12), (2, 15), (3, 4), (4, 8), (5, 16)))\n"
-						+ "SELECT count(a) FROM sample_data AS a");
-		assertThat(queryEnhancer.applySorting(Sort.by("day").descending())).endsWith("ORDER BY a.day DESC");
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isEqualToIgnoringCase("a");
-		assertThat(queryEnhancer.getProjection()).isEqualToIgnoringCase("day, value");
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
-
-	@Test // GH-2578
-	void multipleWithStatementsWorksWithJSQLParser() {
-
-		String setQuery = "with sample_data(day, value) as (values ((0, 13), (1, 12), (2, 15), (3, 4), (4, 8), (5, 16))), test2 as (values (1,2,3)) \n"
-				+ "select day, value from sample_data as a";
-
-		StringQuery stringQuery = new StringQuery(setQuery, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(stringQuery.getAlias()).isEqualToIgnoringCase("a");
-		assertThat(stringQuery.getProjection()).isEqualToIgnoringCase("day, value");
-		assertThat(stringQuery.hasConstructorExpression()).isFalse();
-
-		assertThat(queryEnhancer.createCountQueryFor()).isEqualToIgnoringCase(
-				"with sample_data (day, value) AS (VALUES ((0, 13), (1, 12), (2, 15), (3, 4), (4, 8), (5, 16))),test2 AS (VALUES (1, 2, 3))\n"
-						+ "SELECT count(a) FROM sample_data AS a");
-		assertThat(queryEnhancer.applySorting(Sort.by("day").descending())).endsWith("ORDER BY a.day DESC");
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isEqualToIgnoringCase("a");
-		assertThat(queryEnhancer.getProjection()).isEqualToIgnoringCase("day, value");
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
 
 	@ParameterizedTest // GH-2593
 	@MethodSource("insertStatementIsProcessedSameAsDefaultSource")
@@ -921,21 +638,7 @@ class QueryEnhancerUnitTests {
 		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
 	}
 
-	@ParameterizedTest // GH-2641
-	@MethodSource("mergeStatementWorksWithJSqlParserSource")
-	void mergeStatementWorksWithJSqlParser(String query, String alias) {
 
-		StringQuery stringQuery = new StringQuery(query, true);
-		QueryEnhancer queryEnhancer = QueryEnhancerFactory.forQuery(stringQuery);
-
-		assertThat(queryEnhancer.detectAlias()).isEqualTo(alias);
-		assertThat(QueryUtils.detectAlias(query)).isNull();
-
-		assertThat(queryEnhancer.getJoinAliases()).isEmpty();
-		assertThat(queryEnhancer.detectAlias()).isEqualTo(alias);
-		assertThat(queryEnhancer.getProjection()).isEmpty();
-		assertThat(queryEnhancer.hasConstructorExpression()).isFalse();
-	}
 
 	public static Stream<Arguments> insertStatementIsProcessedSameAsDefaultSource() {
 
@@ -943,17 +646,6 @@ class QueryEnhancerUnitTests {
 				Arguments.of("INSERT INTO FOO(A) VALUES('A')"), //
 				Arguments.of("INSERT INTO randomsecondTable(A,B,C,D) VALUES('A','B','C','D')") //
 		);
-	}
-
-	public static Stream<Arguments> mergeStatementWorksWithJSqlParserSource() {
-
-		return Stream.of( //
-				Arguments.of(
-						"merge into a using (select id, value from b) query on (a.id = query.id) when matched then update set a.value = value",
-						"query"),
-				Arguments.of(
-						"merge into a using (select id2, value from b) on (id = id2) when matched then update set a.value = value",
-						null));
 	}
 
 	public static Stream<Arguments> detectsJoinAliasesCorrectlySource() {
@@ -977,14 +669,8 @@ class QueryEnhancerUnitTests {
 		assertThat(getEnhancer(originalQuery).createCountQueryFor()).isEqualToIgnoringCase(countQuery);
 	}
 
-	private static void endsIgnoringCase(String original, String endWithIgnoreCase) {
-
-		// https://github.com/assertj/assertj-core/pull/2451
-		// can be removed when upgrading to version 3.23.0 assertJ
-		assertThat(original.toUpperCase()).endsWith(endWithIgnoreCase.toUpperCase());
-	}
-
 	private static QueryEnhancer getEnhancer(DeclaredQuery query) {
 		return QueryEnhancerFactory.forQuery(query);
 	}
+
 }

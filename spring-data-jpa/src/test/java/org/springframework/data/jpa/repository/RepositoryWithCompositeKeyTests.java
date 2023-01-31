@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package org.springframework.data.jpa.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.persistence.EntityManager;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +50,12 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Mark Paluch
  * @author Jens Schauder
  * @author Ernst-Jan van der Laan
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = SampleConfig.class)
 @Transactional
-public class RepositoryWithCompositeKeyTests {
+class RepositoryWithCompositeKeyTests {
 
 	@Autowired EmployeeRepositoryWithIdClass employeeRepositoryWithIdClass;
 	@Autowired EmployeeRepositoryWithEmbeddedId employeeRepositoryWithEmbeddedId;
@@ -127,7 +128,7 @@ public class RepositoryWithCompositeKeyTests {
 		Page<IdClassExampleEmployee> page = employeeRepositoryWithIdClass.findAll(PageRequest.of(0, 1));
 
 		assertThat(page).isNotNull();
-		assertThat(page.getTotalElements()).isEqualTo(1L);
+		assertThat(page.getTotalElements()).isOne();
 	}
 
 	@Test // DATAJPA-2414

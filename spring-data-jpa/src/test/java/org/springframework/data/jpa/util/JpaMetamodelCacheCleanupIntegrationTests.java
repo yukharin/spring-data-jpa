@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package org.springframework.data.jpa.util;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import jakarta.persistence.metamodel.Metamodel;
 
@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.data.jpa.repository.config.JpaRepositoryConfigExtension;
@@ -37,6 +36,7 @@ import org.springframework.data.repository.config.RepositoryConfigurationSource;
  * Integration tests for {@link JpaMetamodelCacheCleanup}.
  *
  * @author Oliver Gierke
+ * @author Krzysztof Krason
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -71,7 +71,7 @@ class JpaMetamodelCacheCleanupIntegrationTests {
 
 		String[] cleanupBeanNames = beanFactory.getBeanNamesForType(JpaMetamodelCacheCleanup.class);
 
-		assertThat(cleanupBeanNames.length).isEqualTo(1);
+		assertThat(cleanupBeanNames).hasSize(1);
 		assertThat(beanFactory.getBeanDefinition(cleanupBeanNames[0]).isLazyInit()).isFalse();
 	}
 }

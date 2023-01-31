@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration("classpath:auditing/auditing-entity-with-embeddable-listener.xml")
-public class AuditingEntityWithEmbeddableListenerTests {
+class AuditingEntityWithEmbeddableListenerTests {
 
 	@Autowired AuditableEntityRepository repository;
 

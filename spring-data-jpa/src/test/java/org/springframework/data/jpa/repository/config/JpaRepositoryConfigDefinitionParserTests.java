@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.springframework.data.jpa.repository.config;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.PropertyValue;
@@ -29,6 +29,7 @@ import org.springframework.core.io.ClassPathResource;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 class JpaRepositoryConfigDefinitionParserTests {
 
@@ -44,6 +45,6 @@ class JpaRepositoryConfigDefinitionParserTests {
 
 		PropertyValue transactionManager = definition.getPropertyValues().getPropertyValue("transactionManager");
 		assertThat(transactionManager).isNotNull();
-		assertThat(transactionManager.getValue().toString()).isEqualTo("transactionManager-2");
+		assertThat(transactionManager.getValue()).hasToString("transactionManager-2");
 	}
 }

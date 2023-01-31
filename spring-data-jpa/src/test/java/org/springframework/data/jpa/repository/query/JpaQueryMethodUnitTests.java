@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
@@ -56,7 +60,7 @@ import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.query.QueryMethod;
-import org.springframework.data.util.ClassTypeInformation;
+import org.springframework.data.util.TypeInformation;
 
 /**
  * Unit test for {@link QueryMethod}.
@@ -66,10 +70,11 @@ import org.springframework.data.util.ClassTypeInformation;
  * @author Christoph Strobl
  * @author Jens Schauder
  * @author Mark Paluch
+ * @author Erik Pellizzon
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class JpaQueryMethodUnitTests {
+class JpaQueryMethodUnitTests {
 
 	private static final String METHOD_NAME = "findByFirstname";
 
@@ -107,7 +112,7 @@ public class JpaQueryMethodUnitTests {
 				Integer.class);
 
 		when(metadata.getReturnType(any(Method.class)))
-				.thenAnswer(invocation -> ClassTypeInformation.fromReturnTypeOf(invocation.getArgument(0)));
+				.thenAnswer(invocation -> TypeInformation.fromReturnTypeOf(invocation.getArgument(0)));
 	}
 
 	@Test

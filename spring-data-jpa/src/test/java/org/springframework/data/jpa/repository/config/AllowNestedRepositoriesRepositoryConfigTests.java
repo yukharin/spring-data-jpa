@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.springframework.test.context.ContextConfiguration;
  * @author Jens Schauder
  */
 @ContextConfiguration(locations = "classpath:config/namespace-nested-repositories-application-context.xml")
-public class AllowNestedRepositoriesRepositoryConfigTests extends AbstractRepositoryConfigTests {
+class AllowNestedRepositoriesRepositoryConfigTests extends AbstractRepositoryConfigTests {
 
 	@Autowired NestedUserRepository fooRepository;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2022 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,7 @@
 
 package org.springframework.data.jpa.repository.procedures;
 
-import static org.assertj.core.api.Assertions.*;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Properties;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManagerFactory;
@@ -33,8 +25,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedStoredProcedureQuery;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureParameter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Properties;
+
 import javax.sql.DataSource;
-import jakarta.transaction.Transactional;
 
 import org.hibernate.dialect.PostgreSQL91Dialect;
 import org.junit.jupiter.api.Test;
@@ -58,6 +57,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -70,7 +70,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @Transactional
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = PostgresStoredProcedureIntegrationTests.Config.class)
-public class PostgresStoredProcedureIntegrationTests {
+class PostgresStoredProcedureIntegrationTests {
 
 	@Autowired EmployeeRepositoryWithRefCursor repository;
 
@@ -159,7 +159,8 @@ public class PostgresStoredProcedureIntegrationTests {
 			resultClasses = Employee.class)
 	public static class Employee {
 
-		@Id @GeneratedValue private Integer id;
+		@Id
+		@GeneratedValue private Integer id;
 		private String name;
 	}
 
@@ -197,11 +198,11 @@ public class PostgresStoredProcedureIntegrationTests {
 	static class Config {
 
 		@SuppressWarnings("resource")
-		@Bean(initMethod = "start")
+		@Bean(initMethod = "start", destroyMethod = "stop")
 		public PostgreSQLContainer<?> container() {
 
 			return new PostgreSQLContainer<>("postgres:9.6.12") //
-			.withUsername("postgres");
+					.withUsername("postgres");
 		}
 
 		@Bean

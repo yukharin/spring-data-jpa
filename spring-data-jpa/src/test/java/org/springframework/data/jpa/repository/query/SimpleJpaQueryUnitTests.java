@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,15 @@
  */
 package org.springframework.data.jpa.repository.query;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -37,7 +43,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,7 +57,7 @@ import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.util.ClassTypeInformation;
+import org.springframework.data.util.TypeInformation;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 /**
@@ -64,6 +69,8 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
  * @author Tom Hombergs
  * @author Mark Paluch
  * @author Greg Turnquist
+ * @author Krzysztof Krason
+ * @author Erik Pellizzon
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -99,7 +106,7 @@ class SimpleJpaQueryUnitTests {
 		when(metadata.getDomainType()).thenReturn((Class) User.class);
 		when(metadata.getReturnedDomainClass(Mockito.any(Method.class))).thenReturn((Class) User.class);
 		when(metadata.getReturnType(Mockito.any(Method.class)))
-				.thenAnswer(invocation -> ClassTypeInformation.fromReturnTypeOf(invocation.getArgument(0)));
+				.thenAnswer(invocation -> TypeInformation.fromReturnTypeOf(invocation.getArgument(0)));
 
 		Method setUp = UserRepository.class.getMethod("findByLastname", String.class);
 		method = new JpaQueryMethod(setUp, metadata, factory, extractor);
@@ -147,7 +154,7 @@ class SimpleJpaQueryUnitTests {
 				queryMethod.getAnnotatedQuery(), null, QueryRewriter.IdentityQueryRewriter.INSTANCE,
 				EVALUATION_CONTEXT_PROVIDER);
 
-		assertThat(jpaQuery instanceof NativeJpaQuery).isTrue();
+		assertThat(jpaQuery).isInstanceOf(NativeJpaQuery.class);
 
 		when(em.createNativeQuery(anyString(), eq(User.class))).thenReturn(query);
 		when(metadata.getReturnedDomainClass(method)).thenReturn((Class) User.class);
@@ -190,14 +197,14 @@ class SimpleJpaQueryUnitTests {
 	void createsASimpleJpaQueryFromAnnotation() throws Exception {
 
 		RepositoryQuery query = createJpaQuery(SampleRepository.class.getMethod("findByAnnotatedQuery"));
-		assertThat(query instanceof SimpleJpaQuery).isTrue();
+		assertThat(query).isInstanceOf(SimpleJpaQuery.class);
 	}
 
 	@Test
 	void createsANativeJpaQueryFromAnnotation() throws Exception {
 
 		RepositoryQuery query = createJpaQuery(SampleRepository.class.getMethod("findNativeByLastname", String.class));
-		assertThat(query instanceof NativeJpaQuery).isTrue();
+		assertThat(query).isInstanceOf(NativeJpaQuery.class);
 	}
 
 	@Test // DATAJPA-757

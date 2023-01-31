@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 the original author or authors.
+ * Copyright 2008-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  */
 package org.springframework.data.jpa.repository.support;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.sample.User;
 import org.springframework.data.jpa.repository.sample.UserRepository;
@@ -37,6 +36,7 @@ import org.springframework.transaction.TransactionStatus;
  *
  * @author Oliver Gierke
  * @author Jens Schauder
+ * @author Krzysztof Krason
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration({ "classpath:config/namespace-autoconfig-context.xml", "classpath:tx-manager.xml" })
@@ -47,13 +47,11 @@ public class TransactionalRepositoryTests {
 
 	@BeforeEach
 	void setUp() {
-
 		transactionManager.resetCount();
 	}
 
 	@AfterEach
 	void tearDown() {
-
 		repository.deleteAll();
 	}
 
@@ -61,21 +59,21 @@ public class TransactionalRepositoryTests {
 	void simpleManipulatingOperation() {
 
 		repository.saveAndFlush(new User("foo", "bar", "foo@bar.de"));
-		assertThat(transactionManager.getTransactionRequests()).isEqualTo(1);
+		assertThat(transactionManager.getTransactionRequests()).isOne();
 	}
 
 	@Test
 	void unannotatedFinder() {
 
 		repository.findByEmailAddress("foo@bar.de");
-		assertThat(transactionManager.getTransactionRequests()).isEqualTo(0);
+		assertThat(transactionManager.getTransactionRequests()).isZero();
 	}
 
 	@Test
 	void invokeTransactionalFinder() {
 
 		repository.findByAnnotatedQuery("foo@bar.de");
-		assertThat(transactionManager.getTransactionRequests()).isEqualTo(1);
+		assertThat(transactionManager.getTransactionRequests()).isOne();
 	}
 
 	@Test
@@ -101,13 +99,11 @@ public class TransactionalRepositoryTests {
 		private TransactionDefinition definition;
 
 		public DelegatingTransactionManager(PlatformTransactionManager txManager) {
-
 			this.txManager = txManager;
 		}
 
 		@Override
 		public void commit(TransactionStatus status) throws TransactionException {
-
 			txManager.commit(status);
 		}
 
@@ -121,12 +117,10 @@ public class TransactionalRepositoryTests {
 		}
 
 		int getTransactionRequests() {
-
 			return transactionRequests;
 		}
 
 		public TransactionDefinition getDefinition() {
-
 			return definition;
 		}
 
@@ -138,7 +132,6 @@ public class TransactionalRepositoryTests {
 
 		@Override
 		public void rollback(TransactionStatus status) throws TransactionException {
-
 			txManager.rollback(status);
 		}
 	}
